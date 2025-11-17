@@ -52,7 +52,7 @@ export class TypedTool {
       const errors = [...Value.Errors(this.inputSchema, params)];
       if (errors.length > 0) {
         const errorMessages = errors
-          .map((e) => `${e.path || 'root'}: ${e.message}`)
+          .map(e => `${e.path || 'root'}: ${e.message}`)
           .join('; ');
         return {
           success: false,
@@ -67,7 +67,7 @@ export class TypedTool {
       const outputErrors = [...Value.Errors(this.outputSchema, result)];
       if (outputErrors.length > 0) {
         const errorMessages = outputErrors
-          .map((e) => `${e.path || 'root'}: ${e.message}`)
+          .map(e => `${e.path || 'root'}: ${e.message}`)
           .join('; ');
         return {
           success: false,
@@ -138,7 +138,7 @@ export class ToolRegistry {
   }
 
   getMetadata() {
-    return this.list().map((tool) => ({
+    return this.list().map(tool => ({
       name: tool.name,
       description: tool.description,
       inputSchema: tool.inputSchema,

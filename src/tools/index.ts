@@ -18,9 +18,9 @@ function typedToolToHandler(typedTool: TypedTool): ToolHandler {
       return {
         success: result.success,
         content: result.data,
-        error: result.error
+        error: result.error,
       };
-    }
+    },
   };
 }
 
@@ -34,8 +34,8 @@ export const defaultTools: ToolHandler[] = [
   typedToolToHandler(graphicsConverterTool),
   typedToolToHandler(tilemapGeneratorTool),
   typedToolToHandler(paletteManagerTool),
-  
-  // Utility Tools  
+
+  // Utility Tools
   fileReaderTool,
 ];
 
@@ -57,7 +57,7 @@ export function getToolNames(): string[] {
  * Validate tool parameters against schema
  */
 export function validateToolParams(
-  tool: ToolHandler, 
+  tool: ToolHandler,
   params: Record<string, any>
 ): { valid: boolean; error?: string } {
   for (const param of tool.parameters) {

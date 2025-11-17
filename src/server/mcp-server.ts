@@ -64,13 +64,16 @@ export class MCPServer {
         description: tool.description,
         inputSchema: {
           type: 'object',
-          properties: tool.parameters.reduce((props, param) => {
-            props[param.name] = {
-              type: param.type,
-              description: param.description,
-            };
-            return props;
-          }, {} as Record<string, any>),
+          properties: tool.parameters.reduce(
+            (props, param) => {
+              props[param.name] = {
+                type: param.type,
+                description: param.description,
+              };
+              return props;
+            },
+            {} as Record<string, any>
+          ),
           required: tool.parameters
             .filter(param => param.required)
             .map(param => param.name),
@@ -84,7 +87,7 @@ export class MCPServer {
     // Handle tool execution
     this.server.setRequestHandler(CallToolRequestSchema, async request => {
       const { name, arguments: args } = request.params;
-      
+
       this.logger.debug(`Executing tool: ${name}`, args);
 
       const tool = this.tools.get(name);
@@ -94,15 +97,16 @@ export class MCPServer {
 
       try {
         const result = await tool.execute(args || {});
-        
+
         if (result.success) {
           return {
             content: [
               {
                 type: 'text',
-                text: typeof result.content === 'string' 
-                  ? result.content 
-                  : JSON.stringify(result.content, null, 2),
+                text:
+                  typeof result.content === 'string'
+                    ? result.content
+                    : JSON.stringify(result.content, null, 2),
               },
             ],
           };
@@ -149,7 +153,7 @@ export class MCPServer {
     try {
       this.transport = new StdioServerTransport();
       await this.server.connect(this.transport);
-      
+
       this.logger.info(`${this.name} v${this.version} started successfully`);
       this.logger.info(`Registered ${this.tools.size} tools`);
     } catch (error) {

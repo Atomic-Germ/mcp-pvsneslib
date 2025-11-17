@@ -17,7 +17,7 @@ describe('MCPServer', () => {
   describe('Constructor', () => {
     it('should create an MCP server instance with basic configuration', () => {
       server = new MCPServer(options);
-      
+
       expect(server).toBeDefined();
       expect(server.name).toBe(options.name);
       expect(server.version).toBe(options.version);
@@ -26,7 +26,7 @@ describe('MCPServer', () => {
 
     it('should initialize with empty tool registry', () => {
       server = new MCPServer(options);
-      
+
       expect(server.getRegisteredTools()).toEqual([]);
     });
   });
@@ -45,7 +45,7 @@ describe('MCPServer', () => {
       };
 
       server.registerTool(mockTool);
-      
+
       expect(server.getRegisteredTools()).toContain('test-tool');
     });
 
@@ -59,7 +59,7 @@ describe('MCPServer', () => {
 
       server.registerTool(mockTool);
       expect(server.getRegisteredTools()).toContain('test-tool');
-      
+
       const removed = server.unregisterTool('test-tool');
       expect(removed).toBe(true);
       expect(server.getRegisteredTools()).not.toContain('test-tool');

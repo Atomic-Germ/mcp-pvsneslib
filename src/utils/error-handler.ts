@@ -54,7 +54,11 @@ export class ErrorHandler {
     }
 
     if (error instanceof Error) {
-      this.logger.error(`${context}: ${error.name}`, error.message, error.stack);
+      this.logger.error(
+        `${context}: ${error.name}`,
+        error.message,
+        error.stack
+      );
       return new MCPError(MCP_ERROR_CODES.INTERNAL_ERROR, error.message);
     }
 

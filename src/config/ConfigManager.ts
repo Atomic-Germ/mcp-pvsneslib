@@ -59,17 +59,23 @@ export class ConfigManager {
     // Validate tools configuration
     for (const [toolName, toolConfig] of Object.entries(this.config.tools)) {
       if (typeof toolConfig.enabled !== 'boolean') {
-        throw new Error(`Invalid configuration: tool '${toolName}' must have 'enabled' boolean property`);
+        throw new Error(
+          `Invalid configuration: tool '${toolName}' must have 'enabled' boolean property`
+        );
       }
     }
 
     // Additional validation checks
     if (!this.config.name || typeof this.config.name !== 'string') {
-      throw new Error('Invalid configuration: name is required and must be a string');
+      throw new Error(
+        'Invalid configuration: name is required and must be a string'
+      );
     }
 
     if (!this.config.version || typeof this.config.version !== 'string') {
-      throw new Error('Invalid configuration: version is required and must be a string');
+      throw new Error(
+        'Invalid configuration: version is required and must be a string'
+      );
     }
   }
 
@@ -98,11 +104,14 @@ export class ConfigManager {
   /**
    * Update tool configuration
    */
-  public updateToolConfig(toolName: string, toolConfig: Partial<ToolConfig>): void {
+  public updateToolConfig(
+    toolName: string,
+    toolConfig: Partial<ToolConfig>
+  ): void {
     if (!this.config.tools[toolName]) {
       this.config.tools[toolName] = { enabled: true };
     }
-    
+
     this.config.tools[toolName] = {
       ...this.config.tools[toolName],
       ...toolConfig,

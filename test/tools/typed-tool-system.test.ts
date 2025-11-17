@@ -1,6 +1,10 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { Type } from '@sinclair/typebox';
-import { createTypedTool, ToolRegistry, ValidationError } from '../../src/tools/typed-tool-system.js';
+import {
+  createTypedTool,
+  ToolRegistry,
+  ValidationError,
+} from '../../src/tools/typed-tool-system.js';
 
 describe('TypedTool System', () => {
   describe('Tool Definition', () => {
@@ -47,7 +51,7 @@ describe('TypedTool System', () => {
         description: 'Test validation',
         inputSchema,
         outputSchema: Type.Object({ success: Type.Boolean() }),
-        handler: async (params) => ({ success: true }),
+        handler: async params => ({ success: true }),
       });
 
       // Valid input should not throw
@@ -70,7 +74,7 @@ describe('TypedTool System', () => {
         description: 'Test required params',
         inputSchema,
         outputSchema: Type.Object({ ok: Type.Boolean() }),
-        handler: async (params) => ({ ok: true }),
+        handler: async params => ({ ok: true }),
       });
 
       const result = await tool.execute({} as any);
@@ -92,7 +96,7 @@ describe('TypedTool System', () => {
         description: 'A test tool',
         inputSchema: Type.Object({ id: Type.String() }),
         outputSchema: Type.Object({ result: Type.String() }),
-        handler: async (params) => ({ result: 'ok' }),
+        handler: async params => ({ result: 'ok' }),
       });
 
       registry.register(tool);

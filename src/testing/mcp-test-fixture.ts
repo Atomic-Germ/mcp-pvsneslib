@@ -47,7 +47,7 @@ export class MCPTestFixture {
   async listTools(): Promise<
     Array<{ name: string; description: string; inputSchema?: any }>
   > {
-    return Array.from(this.tools.values()).map((tool) => ({
+    return Array.from(this.tools.values()).map(tool => ({
       name: tool.name,
       description: tool.description,
       inputSchema: tool.inputSchema,

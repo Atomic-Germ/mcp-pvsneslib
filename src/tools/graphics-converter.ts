@@ -5,79 +5,106 @@ import path from 'path';
 
 /**
  * SNES Graphics Converter Tool
- * 
+ *
  * Handles graphics format conversion for SNES development, including
  * palette management, tile optimization, and format conversion for PVSnesLib.
  */
 export const graphicsConverterTool = createTypedTool({
   name: 'graphics_converter',
-  description: 'Convert graphics formats for SNES development - tiles, palettes, backgrounds',
+  description:
+    'Convert graphics formats for SNES development - tiles, palettes, backgrounds',
   inputSchema: Type.Object({
-    action: Type.Union([
-      Type.Literal('convert_png_to_tiles'),
-      Type.Literal('create_palette'),
-      Type.Literal('optimize_tileset'),
-      Type.Literal('generate_background'),
-      Type.Literal('analyze_graphics'),
-      Type.Literal('create_font'),
-      Type.Literal('batch_convert')
-    ], {
-      description: 'Graphics conversion action'
-    }),
-    filePath: Type.Optional(Type.String({
-      description: 'Path to input image file'
-    })),
-    outputPath: Type.Optional(Type.String({
-      description: 'Output directory or file path'
-    })),
-    tileSize: Type.Optional(Type.Union([
-      Type.Literal('8x8'),
-      Type.Literal('16x16'),
-      Type.Literal('32x32')
-    ], {
-      description: 'Tile size for conversion'
-    })),
-    colorMode: Type.Optional(Type.Union([
-      Type.Literal('2bpp'),
-      Type.Literal('4bpp'),
-      Type.Literal('8bpp'),
-      Type.Literal('mode7')
-    ], {
-      description: 'SNES color mode'
-    })),
-    compressionType: Type.Optional(Type.Union([
-      Type.Literal('none'),
-      Type.Literal('rle'),
-      Type.Literal('lz4'),
-      Type.Literal('custom')
-    ], {
-      description: 'Compression method for graphics data'
-    })),
-    generateCode: Type.Optional(Type.Boolean({
-      description: 'Generate C header and source files'
-    })),
-    removeDuplicates: Type.Optional(Type.Boolean({
-      description: 'Remove duplicate tiles during conversion'
-    }))
+    action: Type.Union(
+      [
+        Type.Literal('convert_png_to_tiles'),
+        Type.Literal('create_palette'),
+        Type.Literal('optimize_tileset'),
+        Type.Literal('generate_background'),
+        Type.Literal('analyze_graphics'),
+        Type.Literal('create_font'),
+        Type.Literal('batch_convert'),
+      ],
+      {
+        description: 'Graphics conversion action',
+      }
+    ),
+    filePath: Type.Optional(
+      Type.String({
+        description: 'Path to input image file',
+      })
+    ),
+    outputPath: Type.Optional(
+      Type.String({
+        description: 'Output directory or file path',
+      })
+    ),
+    tileSize: Type.Optional(
+      Type.Union(
+        [Type.Literal('8x8'), Type.Literal('16x16'), Type.Literal('32x32')],
+        {
+          description: 'Tile size for conversion',
+        }
+      )
+    ),
+    colorMode: Type.Optional(
+      Type.Union(
+        [
+          Type.Literal('2bpp'),
+          Type.Literal('4bpp'),
+          Type.Literal('8bpp'),
+          Type.Literal('mode7'),
+        ],
+        {
+          description: 'SNES color mode',
+        }
+      )
+    ),
+    compressionType: Type.Optional(
+      Type.Union(
+        [
+          Type.Literal('none'),
+          Type.Literal('rle'),
+          Type.Literal('lz4'),
+          Type.Literal('custom'),
+        ],
+        {
+          description: 'Compression method for graphics data',
+        }
+      )
+    ),
+    generateCode: Type.Optional(
+      Type.Boolean({
+        description: 'Generate C header and source files',
+      })
+    ),
+    removeDuplicates: Type.Optional(
+      Type.Boolean({
+        description: 'Remove duplicate tiles during conversion',
+      })
+    ),
   }),
   outputSchema: Type.Object({
     success: Type.Boolean(),
     message: Type.String(),
-    data: Type.Optional(Type.Object({
-      generatedFiles: Type.Optional(Type.Array(Type.String())),
-      graphicsInfo: Type.Optional(Type.Object({
-        originalSize: Type.Number(),
-        compressedSize: Type.Number(),
-        tileCount: Type.Number(),
-        uniqueTiles: Type.Number(),
-        paletteColors: Type.Number(),
-        memoryUsage: Type.Number()
-      })),
-      codeSnippet: Type.Optional(Type.String()),
-      conversionStats: Type.Optional(Type.String())
-    }))
+    data: Type.Optional(
+      Type.Object({
+        generatedFiles: Type.Optional(Type.Array(Type.String())),
+        graphicsInfo: Type.Optional(
+          Type.Object({
+            originalSize: Type.Number(),
+            compressedSize: Type.Number(),
+            tileCount: Type.Number(),
+            uniqueTiles: Type.Number(),
+            paletteColors: Type.Number(),
+            memoryUsage: Type.Number(),
+          })
+        ),
+        codeSnippet: Type.Optional(Type.String()),
+        conversionStats: Type.Optional(Type.String()),
+      })
+    ),
   }),
-  handler: async (input) => {
+  handler: async input => {
     try {
       const {
         action,
@@ -87,71 +114,94 @@ export const graphicsConverterTool = createTypedTool({
         colorMode = '4bpp',
         compressionType = 'none',
         generateCode = true,
-        removeDuplicates = true
+        removeDuplicates = true,
       } = input;
 
       switch (action) {
         case 'convert_png_to_tiles':
           if (!filePath) {
-            return { success: false, message: 'filePath is required for PNG conversion' };
+            return {
+              success: false,
+              message: 'filePath is required for PNG conversion',
+            };
           }
-          return await convertPngToTiles(filePath, outputPath, tileSize, colorMode, generateCode, removeDuplicates);
-        
+          return await convertPngToTiles(
+            filePath,
+            outputPath,
+            tileSize,
+            colorMode,
+            generateCode,
+            removeDuplicates
+          );
+
         case 'create_palette':
           if (!filePath) {
-            return { success: false, message: 'filePath is required for palette creation' };
+            return {
+              success: false,
+              message: 'filePath is required for palette creation',
+            };
           }
           return await createPalette(filePath, colorMode);
-        
+
         case 'optimize_tileset':
           if (!filePath) {
-            return { success: false, message: 'filePath is required for tileset optimization' };
+            return {
+              success: false,
+              message: 'filePath is required for tileset optimization',
+            };
           }
           return await optimizeTileset(filePath, removeDuplicates);
-        
+
         case 'generate_background':
           return await generateBackground(tileSize, colorMode);
-        
+
         case 'analyze_graphics':
           if (!filePath) {
-            return { success: false, message: 'filePath is required for graphics analysis' };
+            return {
+              success: false,
+              message: 'filePath is required for graphics analysis',
+            };
           }
           return await analyzeGraphics(filePath);
-        
+
         case 'create_font':
           return await createFont(tileSize, colorMode);
-        
+
         case 'batch_convert':
           if (!filePath) {
-            return { success: false, message: 'filePath (directory) is required for batch conversion' };
+            return {
+              success: false,
+              message: 'filePath (directory) is required for batch conversion',
+            };
           }
           return await batchConvert(filePath, outputPath, tileSize, colorMode);
-        
+
         default:
           return { success: false, message: `Unknown action: ${action}` };
       }
     } catch (error) {
       return {
         success: false,
-        message: `Graphics converter error: ${error instanceof Error ? error.message : 'Unknown error'}`
+        message: `Graphics converter error: ${error instanceof Error ? error.message : 'Unknown error'}`,
       };
     }
-  }
+  },
 });
 
 async function convertPngToTiles(
-  filePath: string, 
-  outputPath: string, 
-  tileSize: string, 
-  colorMode: string, 
+  filePath: string,
+  outputPath: string,
+  tileSize: string,
+  colorMode: string,
   generateCode: boolean,
   removeDuplicates: boolean
 ) {
   const basename = path.basename(filePath, '.png');
   const [width, height] = tileSize.split('x').map(Number);
-  const bppValue = parseInt(colorMode.replace('bpp', '')) || (colorMode === 'mode7' ? 8 : 4);
+  const bppValue =
+    parseInt(colorMode.replace('bpp', '')) || (colorMode === 'mode7' ? 8 : 4);
   const maxColors = Math.pow(2, bppValue);
-  
+
   // Generate conversion script
   const conversionScript = `#!/bin/bash
 # Conversion script for ${basename}
@@ -197,7 +247,7 @@ echo "4. Export palette as ${basename}.pal"`;
   // Generate C header if requested
   let cHeader = '';
   let cSource = '';
-  
+
   if (generateCode) {
     cHeader = `#ifndef ${basename.toUpperCase()}_GFX_H
 #define ${basename.toUpperCase()}_GFX_H
@@ -211,7 +261,7 @@ echo "4. Export palette as ${basename}.pal"`;
 
 #define ${basename.toUpperCase()}_TILE_WIDTH  ${width}
 #define ${basename.toUpperCase()}_TILE_HEIGHT ${height}
-#define ${basename.toUpperCase()}_TILE_SIZE   ${width * height * bppValue / 8}
+#define ${basename.toUpperCase()}_TILE_SIZE   ${(width * height * bppValue) / 8}
 #define ${basename.toUpperCase()}_MAX_COLORS  ${maxColors}
 
 // External data declarations (generated by conversion tools)
@@ -274,13 +324,13 @@ void ${basename}LoadTilemap(u16 vram_addr, u16 map_width, u16 map_height) {
   }
 
   const estimatedTiles = 64; // Placeholder estimation
-  const memoryUsage = estimatedTiles * width * height * bppValue / 8;
+  const memoryUsage = (estimatedTiles * width * height * bppValue) / 8;
 
   return {
     success: true,
     message: `Generated conversion setup for ${basename} (${tileSize}, ${colorMode})`,
     data: {
-      generatedFiles: generateCode 
+      generatedFiles: generateCode
         ? [`${basename}_gfx.h`, `${basename}_gfx.c`, `convert_${basename}.sh`]
         : [`convert_${basename}.sh`],
       graphicsInfo: {
@@ -289,13 +339,13 @@ void ${basename}LoadTilemap(u16 vram_addr, u16 map_width, u16 map_height) {
         tileCount: estimatedTiles,
         uniqueTiles: removeDuplicates ? estimatedTiles * 0.8 : estimatedTiles,
         paletteColors: maxColors,
-        memoryUsage
+        memoryUsage,
       },
-      codeSnippet: generateCode 
+      codeSnippet: generateCode
         ? `// Initialize and use graphics\n${basename}Init();\n${basename}LoadTiles(BG1_TILE_BASE);\n${basename}LoadPalette(0);`
         : conversionScript,
-      conversionStats: `Estimated output:\n- Tiles: ${estimatedTiles}\n- Colors: ${maxColors}\n- Memory: ${memoryUsage} bytes`
-    }
+      conversionStats: `Estimated output:\n- Tiles: ${estimatedTiles}\n- Colors: ${maxColors}\n- Memory: ${memoryUsage} bytes`,
+    },
   };
 }
 
@@ -335,7 +385,7 @@ const u16 ${basename}_palette[${basename.toUpperCase()}_PALETTE_SIZE] = {
     0x03E0, // Color 4: Green
     0x7C00, // Color 5: Blue
     // Add remaining colors (${maxColors - 6} more)
-    ${Array.from({length: maxColors - 6}, () => '0x0000,').join('\n    ')}
+    ${Array.from({ length: maxColors - 6 }, () => '0x0000,').join('\n    ')}
 };
 
 void ${basename}LoadPalette(u8 palette_index) {
@@ -385,11 +435,11 @@ Each RGB color (r,g,b) becomes: (b/8)<<10 | (g/8)<<5 | (r/8)`;
         tileCount: 0,
         uniqueTiles: 0,
         paletteColors: maxColors,
-        memoryUsage: maxColors * 2
+        memoryUsage: maxColors * 2,
       },
       codeSnippet: `// Load and use palette\n${basename}LoadPalette(0);\n${basename}SetPaletteColor(1, ${basename}RgbToSnes(255, 0, 0)); // Set red`,
-      conversionStats: extractionInstructions
-    }
+      conversionStats: extractionInstructions,
+    },
   };
 }
 
@@ -402,11 +452,15 @@ async function optimizeTileset(filePath: string, removeDuplicates: boolean) {
 echo "Optimizing tileset: ${basename}"
 
 # Step 1: Remove duplicate tiles
-${removeDuplicates ? `
+${
+  removeDuplicates
+    ? `
 echo "Removing duplicate tiles..."
 # This would use a tool like tiled2snes with deduplication
 # tiled2snes --input "${filePath}" --output "${basename}_optimized" --remove-duplicates
-` : ''}
+`
+    : ''
+}
 
 # Step 2: Reorder tiles by usage frequency
 echo "Reordering tiles by usage..."
@@ -451,8 +505,8 @@ echo "Optimization complete!"`;
     data: {
       generatedFiles: [`optimize_${basename}.sh`],
       codeSnippet: optimizationScript,
-      conversionStats: optimizationTips
-    }
+      conversionStats: optimizationTips,
+    },
   };
 }
 
@@ -521,7 +575,7 @@ void bgInit(void) {
 }
 
 void bgLoadTiles(const u8 *tile_data, u16 tile_count) {
-    dmaCopyVram(tile_data, BG_TILE_BASE, tile_count * ${width * height * bppValue / 8});
+    dmaCopyVram(tile_data, BG_TILE_BASE, tile_count * ${(width * height * bppValue) / 8});
 }
 
 void bgLoadMap(const u16 *map_data) {
@@ -577,10 +631,10 @@ const u8 bg_tiles[] = {
         tileCount: 64,
         uniqueTiles: 64,
         paletteColors: Math.pow(2, bppValue),
-        memoryUsage: 2048 + 2048 // VRAM usage
+        memoryUsage: 2048 + 2048, // VRAM usage
       },
-      codeSnippet: `// Initialize and use background\nbgInit();\nbgLoadTiles(my_tiles, tile_count);\nbgLoadMap(my_map);\nbgSetScroll(0, 0);\nbgShow();`
-    }
+      codeSnippet: `// Initialize and use background\nbgInit();\nbgLoadTiles(my_tiles, tile_count);\nbgLoadMap(my_map);\nbgSetScroll(0, 0);\nbgShow();`,
+    },
   };
 }
 
@@ -598,7 +652,9 @@ async function analyzeGraphics(filePath: string) {
 - Modified: ${stats.mtime.toISOString()}
 
 ## SNES Compatibility Analysis:
-${ext === '.png' ? `
+${
+  ext === '.png'
+    ? `
 ### PNG Analysis:
 - Recommended: Convert to CHR/PAL format
 - Tools: superfamiconv, png2snes, YY-CHR
@@ -609,9 +665,13 @@ ${ext === '.png' ? `
 2. Use 8x8 or 16x16 tile sizes
 3. Remove duplicate tiles
 4. Optimize for SNES color format (15-bit RGB)
-` : ''}
+`
+    : ''
+}
 
-${ext === '.chr' ? `
+${
+  ext === '.chr'
+    ? `
 ### CHR Format Analysis:
 - File size suggests ~${Math.floor(stats.size / 32)} tiles
 - Format appears to be SNES-compatible
@@ -620,7 +680,9 @@ ${ext === '.chr' ? `
 ### Integration:
 1. Include in ROM: const u8 tiles[] = { #include "file.chr" };
 2. Load to VRAM: dmaCopyVram(tiles, vram_addr, size);
-` : ''}
+`
+    : ''
+}
 
 ## Memory Usage Estimate:
 - Original: ${stats.size} bytes
@@ -643,22 +705,22 @@ ${ext === '.chr' ? `
           tileCount: Math.floor(stats.size / 32),
           uniqueTiles: Math.floor(stats.size / 32),
           paletteColors: 16,
-          memoryUsage: stats.size
+          memoryUsage: stats.size,
         },
-        conversionStats: analysis
-      }
+        conversionStats: analysis,
+      },
     };
   } catch (error) {
     return {
       success: false,
-      message: `Could not analyze file: ${error instanceof Error ? error.message : 'Unknown error'}`
+      message: `Could not analyze file: ${error instanceof Error ? error.message : 'Unknown error'}`,
     };
   }
 }
 
 async function createFont(tileSize: string, colorMode: string) {
   const [width, height] = tileSize.split('x').map(Number);
-  
+
   const fontHeader = `// Font System for SNES
 #ifndef FONT_H
 #define FONT_H
@@ -683,7 +745,7 @@ void fontSetColor(u8 color);
   const fontSource = `#include "font.h"
 
 // Font tile data (8x8 ASCII characters)
-const u8 font_tiles[FONT_CHAR_COUNT * ${width * height / 4}] = {
+const u8 font_tiles[FONT_CHAR_COUNT * ${(width * height) / 4}] = {
     // Space (32)
     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
     // ! (33)  
@@ -743,18 +805,23 @@ void fontSetColor(u8 color) {
       generatedFiles: ['font.h', 'font.c'],
       graphicsInfo: {
         originalSize: 0,
-        compressedSize: 95 * (width * height / 4), // 95 printable characters
+        compressedSize: 95 * ((width * height) / 4), // 95 printable characters
         tileCount: 95,
         uniqueTiles: 95,
         paletteColors: 16,
-        memoryUsage: 95 * (width * height / 4)
+        memoryUsage: 95 * ((width * height) / 4),
       },
-      codeSnippet: `// Initialize and use font\nfontInit();\nfontSetColor(1);\nfontPrint(2, 2, "Hello, SNES!");`
-    }
+      codeSnippet: `// Initialize and use font\nfontInit();\nfontSetColor(1);\nfontPrint(2, 2, "Hello, SNES!");`,
+    },
   };
 }
 
-async function batchConvert(inputDir: string, outputDir: string, tileSize: string, colorMode: string) {
+async function batchConvert(
+  inputDir: string,
+  outputDir: string,
+  tileSize: string,
+  colorMode: string
+) {
   const batchScript = `#!/bin/bash
 # Batch Graphics Conversion Script
 
@@ -815,7 +882,7 @@ echo "Generated files in: \$OUTPUT_DIR"`;
     data: {
       generatedFiles: ['batch_convert.sh'],
       codeSnippet: batchScript,
-      conversionStats: `Batch conversion will process all PNG files in ${inputDir} with settings:\n- Tile Size: ${tileSize}\n- Color Mode: ${colorMode}\n- Output: ${outputDir}`
-    }
+      conversionStats: `Batch conversion will process all PNG files in ${inputDir} with settings:\n- Tile Size: ${tileSize}\n- Color Mode: ${colorMode}\n- Output: ${outputDir}`,
+    },
   };
 }

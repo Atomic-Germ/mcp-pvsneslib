@@ -11,7 +11,7 @@ describe('Structured Logger', () => {
       const logger = new StructuredLogger('test-service');
       const logs: any[] = [];
 
-      logger.on('log', (entry) => {
+      logger.on('log', entry => {
         logs.push(entry);
       });
 
@@ -30,7 +30,7 @@ describe('Structured Logger', () => {
       const correlationId = createCorrelationId();
       const logs: any[] = [];
 
-      logger.on('log', (entry) => {
+      logger.on('log', entry => {
         logs.push(entry);
       });
 
@@ -46,7 +46,7 @@ describe('Structured Logger', () => {
       const logger = new StructuredLogger('service');
       const logs: any[] = [];
 
-      logger.on('log', (entry) => {
+      logger.on('log', entry => {
         logs.push(entry);
       });
 
@@ -66,7 +66,7 @@ describe('Structured Logger', () => {
       const logs: any[] = [];
       const beforeTime = new Date().getTime();
 
-      logger.on('log', (entry) => {
+      logger.on('log', entry => {
         logs.push(entry);
       });
 
@@ -84,7 +84,7 @@ describe('Structured Logger', () => {
       const logger = new StructuredLogger('service');
       const logs: any[] = [];
 
-      logger.on('log', (entry) => {
+      logger.on('log', entry => {
         logs.push(entry);
       });
 
@@ -103,7 +103,7 @@ describe('Structured Logger', () => {
       const logger = new StructuredLogger('service');
       const logs: any[] = [];
 
-      logger.on('log', (entry) => {
+      logger.on('log', entry => {
         logs.push(entry);
       });
 
@@ -118,7 +118,7 @@ describe('Structured Logger', () => {
       const logger = new StructuredLogger('service');
       const logs: any[] = [];
 
-      logger.on('log', (entry) => {
+      logger.on('log', entry => {
         logs.push(entry);
       });
 
@@ -135,7 +135,7 @@ describe('Structured Logger', () => {
       const logger = new StructuredLogger('service');
       const logs: any[] = [];
 
-      logger.on('log', (entry) => {
+      logger.on('log', entry => {
         logs.push(entry);
       });
 
@@ -154,7 +154,7 @@ describe('Structured Logger', () => {
       const logger = new StructuredLogger('service');
       const logs: any[] = [];
 
-      logger.on('log', (entry) => {
+      logger.on('log', entry => {
         logs.push(entry);
       });
 
@@ -176,7 +176,7 @@ describe('Structured Logger', () => {
       const logger = new StructuredLogger('service');
       const logs: any[] = [];
 
-      logger.on('log', (entry) => {
+      logger.on('log', entry => {
         logs.push(entry);
       });
 

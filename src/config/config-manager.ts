@@ -14,7 +14,13 @@ const DEFAULT_CONFIG: ServerConfig = {
     format: 'text',
   },
   tools: {
-    enabled: ['sprite_manager', 'sound_engine', 'graphics_converter', 'tilemap_generator', 'palette_manager'],
+    enabled: [
+      'sprite_manager',
+      'sound_engine',
+      'graphics_converter',
+      'tilemap_generator',
+      'palette_manager',
+    ],
     disabled: [],
   },
   security: {
@@ -37,7 +43,9 @@ export class ConfigManager {
   /**
    * Load configuration from environment variables and custom config
    */
-  private loadConfiguration(customConfig?: Partial<ServerConfig>): ServerConfig {
+  private loadConfiguration(
+    customConfig?: Partial<ServerConfig>
+  ): ServerConfig {
     let config: ServerConfig = JSON.parse(JSON.stringify(DEFAULT_CONFIG));
 
     // Override with environment variables
@@ -85,7 +93,10 @@ export class ConfigManager {
   /**
    * Deep merge two configuration objects
    */
-  private mergeConfigs(target: ServerConfig, source: Partial<ServerConfig>): ServerConfig {
+  private mergeConfigs(
+    target: ServerConfig,
+    source: Partial<ServerConfig>
+  ): ServerConfig {
     const result = JSON.parse(JSON.stringify(target));
 
     if (source.server) {
@@ -161,7 +172,7 @@ export class ConfigManager {
    */
   public isToolEnabled(toolName: string): boolean {
     const { enabled, disabled } = this.config.tools;
-    
+
     // If tool is explicitly disabled, return false
     if (disabled.includes(toolName)) {
       return false;

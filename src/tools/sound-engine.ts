@@ -5,129 +5,155 @@ import path from 'path';
 
 /**
  * SNES Sound Engine Tool
- * 
+ *
  * Manages SNES audio development including SPC700 sound engine setup,
  * sample conversion, and music/sound effect integration for PVSnesLib.
  */
 export const soundEngineTool = createTypedTool({
   name: 'sound_engine',
-  description: 'Manage SNES audio - SPC700 engine, samples, music, sound effects for PVSnesLib',
+  description:
+    'Manage SNES audio - SPC700 engine, samples, music, sound effects for PVSnesLib',
   inputSchema: Type.Object({
-    action: Type.Union([
-      Type.Literal('create_sound_engine'),
-      Type.Literal('convert_wav_to_brr'),
-      Type.Literal('create_music_template'),
-      Type.Literal('generate_sfx_bank'),
-      Type.Literal('setup_spc_player'),
-      Type.Literal('analyze_audio_memory')
-    ], {
-      description: 'Audio action to perform'
-    }),
-    filePath: Type.Optional(Type.String({
-      description: 'Path to audio file or output directory'
-    })),
-    audioFormat: Type.Optional(Type.Union([
-      Type.Literal('BRR'),
-      Type.Literal('SPC'),
-      Type.Literal('IT'),
-      Type.Literal('NSF')
-    ], {
-      description: 'Audio format for conversion'
-    })),
-    sampleRate: Type.Optional(Type.Union([
-      Type.Literal(8000),
-      Type.Literal(11025),
-      Type.Literal(16000),
-      Type.Literal(22050),
-      Type.Literal(32000)
-    ], {
-      description: 'Sample rate in Hz (SNES-compatible rates)'
-    })),
-    channels: Type.Optional(Type.Union([
-      Type.Literal(1),
-      Type.Literal(2)
-    ], {
-      description: 'Number of audio channels (mono/stereo)'
-    })),
-    engineType: Type.Optional(Type.Union([
-      Type.Literal('tracker'),
-      Type.Literal('sequencer'),
-      Type.Literal('simple')
-    ], {
-      description: 'Sound engine type'
-    })),
-    trackCount: Type.Optional(Type.Number({
-      description: 'Number of audio tracks/channels',
-      minimum: 1,
-      maximum: 8
-    }))
+    action: Type.Union(
+      [
+        Type.Literal('create_sound_engine'),
+        Type.Literal('convert_wav_to_brr'),
+        Type.Literal('create_music_template'),
+        Type.Literal('generate_sfx_bank'),
+        Type.Literal('setup_spc_player'),
+        Type.Literal('analyze_audio_memory'),
+      ],
+      {
+        description: 'Audio action to perform',
+      }
+    ),
+    filePath: Type.Optional(
+      Type.String({
+        description: 'Path to audio file or output directory',
+      })
+    ),
+    audioFormat: Type.Optional(
+      Type.Union(
+        [
+          Type.Literal('BRR'),
+          Type.Literal('SPC'),
+          Type.Literal('IT'),
+          Type.Literal('NSF'),
+        ],
+        {
+          description: 'Audio format for conversion',
+        }
+      )
+    ),
+    sampleRate: Type.Optional(
+      Type.Union(
+        [
+          Type.Literal(8000),
+          Type.Literal(11025),
+          Type.Literal(16000),
+          Type.Literal(22050),
+          Type.Literal(32000),
+        ],
+        {
+          description: 'Sample rate in Hz (SNES-compatible rates)',
+        }
+      )
+    ),
+    channels: Type.Optional(
+      Type.Union([Type.Literal(1), Type.Literal(2)], {
+        description: 'Number of audio channels (mono/stereo)',
+      })
+    ),
+    engineType: Type.Optional(
+      Type.Union(
+        [
+          Type.Literal('tracker'),
+          Type.Literal('sequencer'),
+          Type.Literal('simple'),
+        ],
+        {
+          description: 'Sound engine type',
+        }
+      )
+    ),
+    trackCount: Type.Optional(
+      Type.Number({
+        description: 'Number of audio tracks/channels',
+        minimum: 1,
+        maximum: 8,
+      })
+    ),
   }),
   outputSchema: Type.Object({
     success: Type.Boolean(),
     message: Type.String(),
-    data: Type.Optional(Type.Object({
-      generatedFiles: Type.Optional(Type.Array(Type.String())),
-      audioInfo: Type.Optional(Type.Object({
-        format: Type.String(),
-        size: Type.Number(),
-        duration: Type.Number(),
-        memoryUsage: Type.Number(),
-        trackCount: Type.Number()
-      })),
-      codeSnippet: Type.Optional(Type.String()),
-      instructions: Type.Optional(Type.String())
-    }))
+    data: Type.Optional(
+      Type.Object({
+        generatedFiles: Type.Optional(Type.Array(Type.String())),
+        audioInfo: Type.Optional(
+          Type.Object({
+            format: Type.String(),
+            size: Type.Number(),
+            duration: Type.Number(),
+            memoryUsage: Type.Number(),
+            trackCount: Type.Number(),
+          })
+        ),
+        codeSnippet: Type.Optional(Type.String()),
+        instructions: Type.Optional(Type.String()),
+      })
+    ),
   }),
-  handler: async (input) => {
+  handler: async input => {
     try {
-      const { 
-        action, 
-        filePath, 
-        audioFormat = 'BRR', 
-        sampleRate = 22050, 
+      const {
+        action,
+        filePath,
+        audioFormat = 'BRR',
+        sampleRate = 22050,
         channels = 1,
         engineType = 'simple',
-        trackCount = 4
+        trackCount = 4,
       } = input;
 
       switch (action) {
         case 'create_sound_engine':
           return await createSoundEngine(engineType, trackCount);
-        
+
         case 'convert_wav_to_brr':
           if (!filePath) {
             return {
               success: false,
-              message: 'filePath is required for WAV conversion'
+              message: 'filePath is required for WAV conversion',
             };
           }
           return await convertWavToBrr(filePath, sampleRate);
-        
+
         case 'create_music_template':
           return await createMusicTemplate(trackCount);
-        
+
         case 'generate_sfx_bank':
           return await generateSfxBank();
-        
+
         case 'setup_spc_player':
           return await setupSpcPlayer(engineType);
-        
+
         case 'analyze_audio_memory':
           return await analyzeAudioMemory();
-        
+
         default:
           return {
             success: false,
-            message: `Unknown action: ${action}`
+            message: `Unknown action: ${action}`,
           };
       }
     } catch (error) {
       return {
         success: false,
-        message: `Sound engine error: ${error instanceof Error ? error.message : 'Unknown error'}`
+        message: `Sound engine error: ${error instanceof Error ? error.message : 'Unknown error'}`,
       };
     }
-  }
+  },
 });
 
 async function createSoundEngine(engineType: string, trackCount: number) {
@@ -329,17 +355,17 @@ void soundSetMusicVolume(u8 volume) {
         size: 0,
         duration: 0,
         memoryUsage: 65536, // 64KB audio RAM
-        trackCount
+        trackCount,
       },
-      codeSnippet: `// Initialize and use sound engine\nsoundEngineInit();\nsoundPlaySFX(0, 127, 60); // Play sample 0 at max volume\nsoundPlayMusic(my_song_data);`
-    }
+      codeSnippet: `// Initialize and use sound engine\nsoundEngineInit();\nsoundPlaySFX(0, 127, 60); // Play sample 0 at max volume\nsoundPlayMusic(my_song_data);`,
+    },
   };
 }
 
 async function convertWavToBrr(filePath: string, sampleRate: number) {
   const basename = path.basename(filePath, '.wav');
   const brrFile = `${basename}.brr`;
-  
+
   const instructions = `# Convert WAV to BRR (SNES audio format)
 
 # Using brr_encoder:
@@ -365,8 +391,8 @@ snesbrr encode "${filePath}" "${brrFile}" --rate=${sampleRate} --loop
     data: {
       generatedFiles: [brrFile],
       instructions,
-      codeSnippet: `// Sample loading code\nconst u8 ${basename}_sample[] = {\n    #include "${brrFile}"\n};\n\nu8 sample_id = soundLoadSample(${basename}_sample, sizeof(${basename}_sample), 0, 0);`
-    }
+      codeSnippet: `// Sample loading code\nconst u8 ${basename}_sample[] = {\n    #include "${brrFile}"\n};\n\nu8 sample_id = soundLoadSample(${basename}_sample, sizeof(${basename}_sample), 0, 0);`,
+    },
   };
 }
 
@@ -434,7 +460,7 @@ const music_song_t example_song = {
     .tracks = {
         {melody_pattern, sizeof(melody_pattern)/sizeof(music_note_t), 0, 0},
         {bass_pattern, sizeof(bass_pattern)/sizeof(music_note_t), 1, 0},
-        ${Array.from({length: trackCount - 2}, (_, i) => `{NULL, 0, ${i + 2}, 0},`).join('\n        ')}
+        ${Array.from({ length: trackCount - 2 }, (_, i) => `{NULL, 0, ${i + 2}, 0},`).join('\n        ')}
     },
     .tempo = 120,
     .time_signature = 4,
@@ -457,10 +483,10 @@ void musicPlay(const music_song_t *song) {
         size: 0,
         duration: 0,
         memoryUsage: 1024, // Estimate
-        trackCount
+        trackCount,
       },
-      codeSnippet: `// Play example song\nmusicPlay(&example_song);\n\n// Stop playback\nmusicStop();`
-    }
+      codeSnippet: `// Play example song\nmusicPlay(&example_song);\n\n// Stop playback\nmusicStop();`,
+    },
   };
 }
 
@@ -572,10 +598,10 @@ void sfxPlayGameOver(void) { sfxPlay(SFX_GAME_OVER); }`;
         size: 0,
         duration: 0,
         memoryUsage: 8192, // Estimate for 8 SFX samples
-        trackCount: 8
+        trackCount: 8,
       },
-      codeSnippet: `// Initialize and use SFX bank\nsfxBankInit();\nsfxPlayJump(); // Play jump sound\nsfxPlayCoin(); // Play coin pickup sound`
-    }
+      codeSnippet: `// Initialize and use SFX bank\nsfxBankInit();\nsfxPlayJump(); // Play jump sound\nsfxPlayCoin(); // Play coin pickup sound`,
+    },
   };
 }
 
@@ -612,8 +638,8 @@ Port 3: Parameter 3 (effects, length, etc.)`;
     data: {
       instructions: spcSetup,
       generatedFiles: ['spc_setup.md', 'spc_loader.c'],
-      codeSnippet: `// SPC700 initialization sequence\nvoid initAudio(void) {\n    spcLoad(spc_driver, sizeof(spc_driver));\n    soundEngineInit();\n    sfxBankInit();\n    consoleWrite("Audio system ready\\n");\n}`
-    }
+      codeSnippet: `// SPC700 initialization sequence\nvoid initAudio(void) {\n    spcLoad(spc_driver, sizeof(spc_driver));\n    soundEngineInit();\n    sfxBankInit();\n    consoleWrite("Audio system ready\\n");\n}`,
+    },
   };
 }
 
@@ -655,8 +681,8 @@ async function analyzeAudioMemory() {
         size: 65536,
         duration: 0,
         memoryUsage: 49152, // Typical usage ~48KB
-        trackCount: 8
-      }
-    }
+        trackCount: 8,
+      },
+    },
   };
 }

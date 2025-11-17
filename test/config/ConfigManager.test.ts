@@ -17,8 +17,8 @@ describe('ConfigManager', () => {
       tools: {
         greeting: { enabled: true },
         calculator: { enabled: true },
-        fileReader: { enabled: false, maxFileSize: 1048576 }
-      }
+        fileReader: { enabled: false, maxFileSize: 1048576 },
+      },
     };
     configManager = new ConfigManager(defaultConfig);
   });
@@ -26,7 +26,7 @@ describe('ConfigManager', () => {
   describe('Configuration Loading', () => {
     it('should load default configuration', () => {
       const config = configManager.getConfig();
-      
+
       expect(config.name).toBe('test-server');
       expect(config.version).toBe('1.0.0');
       expect(config.port).toBe(3000);
@@ -37,14 +37,14 @@ describe('ConfigManager', () => {
       process.env.MCP_SERVER_NAME = 'env-server';
       process.env.MCP_SERVER_PORT = '8080';
       process.env.MCP_LOG_LEVEL = 'debug';
-      
+
       configManager = new ConfigManager(defaultConfig);
       const config = configManager.getConfig();
-      
+
       expect(config.name).toBe('env-server');
       expect(config.port).toBe(8080);
       expect(config.logLevel).toBe('debug');
-      
+
       // Cleanup
       delete process.env.MCP_SERVER_NAME;
       delete process.env.MCP_SERVER_PORT;
@@ -55,9 +55,9 @@ describe('ConfigManager', () => {
       const invalidConfig = {
         ...defaultConfig,
         port: -1, // Invalid port
-        logLevel: 'invalid' as any // Invalid log level
+        logLevel: 'invalid' as any, // Invalid log level
       };
-      
+
       expect(() => {
         new ConfigManager(invalidConfig);
       }).toThrow();
@@ -67,20 +67,23 @@ describe('ConfigManager', () => {
   describe('Tool Configuration', () => {
     it('should get tool configuration', () => {
       const greetingConfig = configManager.getToolConfig('greeting');
-      
+
       expect(greetingConfig).toEqual({ enabled: true });
     });
 
     it('should return undefined for non-existent tool config', () => {
       const config = configManager.getToolConfig('nonexistent');
-      
+
       expect(config).toBeUndefined();
     });
 
     it('should update tool configuration', () => {
-      configManager.updateToolConfig('calculator', { enabled: false, precision: 2 });
+      configManager.updateToolConfig('calculator', {
+        enabled: false,
+        precision: 2,
+      });
       const config = configManager.getToolConfig('calculator');
-      
+
       expect(config.enabled).toBe(false);
       expect(config.precision).toBe(2);
     });

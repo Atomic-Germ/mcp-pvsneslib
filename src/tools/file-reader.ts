@@ -12,7 +12,8 @@ export const fileReaderTool: ToolHandler = {
     {
       name: 'path',
       type: 'string',
-      description: 'Path to the file to read (relative to current working directory)',
+      description:
+        'Path to the file to read (relative to current working directory)',
       required: true,
     },
     {
@@ -30,9 +31,9 @@ export const fileReaderTool: ToolHandler = {
       default: 1024 * 1024,
     },
   ],
-  async execute(params: { 
-    path: string; 
-    include_metadata?: boolean; 
+  async execute(params: {
+    path: string;
+    include_metadata?: boolean;
     max_size?: number;
   }): Promise<ToolResult> {
     const { path, include_metadata = false, max_size = 1024 * 1024 } = params;
@@ -47,9 +48,13 @@ export const fileReaderTool: ToolHandler = {
     try {
       // Resolve and validate path
       const resolvedPath = resolve(path);
-      
+
       // Basic security check - ensure we're not trying to read outside reasonable bounds
-      if (resolvedPath.includes('..') || resolvedPath.startsWith('/etc') || resolvedPath.startsWith('/root')) {
+      if (
+        resolvedPath.includes('..') ||
+        resolvedPath.startsWith('/etc') ||
+        resolvedPath.startsWith('/root')
+      ) {
         return {
           success: false,
           error: 'Access to this path is not allowed for security reasons',
@@ -58,7 +63,7 @@ export const fileReaderTool: ToolHandler = {
 
       // Check if file exists and get stats
       const stats = await fs.stat(resolvedPath);
-      
+
       if (!stats.isFile()) {
         return {
           success: false,
@@ -76,7 +81,7 @@ export const fileReaderTool: ToolHandler = {
 
       // Read file content
       const content = await fs.readFile(resolvedPath, 'utf8');
-      
+
       const result: any = {
         content,
         path: resolvedPath,
@@ -124,7 +129,7 @@ export const fileReaderTool: ToolHandler = {
           };
         }
       }
-      
+
       return {
         success: false,
         error: `Failed to read file: ${error instanceof Error ? error.message : String(error)}`,

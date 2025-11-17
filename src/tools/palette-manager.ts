@@ -5,80 +5,105 @@ import path from 'path';
 
 /**
  * SNES Palette Manager Tool
- * 
+ *
  * Manages color palettes for SNES development, including
  * color conversion, palette optimization, and gradient generation for PVSnesLib.
  */
 export const paletteManagerTool = createTypedTool({
   name: 'palette_manager',
-  description: 'Manage SNES color palettes - create, optimize, convert, and generate palettes',
+  description:
+    'Manage SNES color palettes - create, optimize, convert, and generate palettes',
   inputSchema: Type.Object({
-    action: Type.Union([
-      Type.Literal('create_palette'),
-      Type.Literal('convert_rgb_to_snes'),
-      Type.Literal('optimize_colors'),
-      Type.Literal('generate_gradient'),
-      Type.Literal('merge_palettes'),
-      Type.Literal('extract_from_image'),
-      Type.Literal('create_fade_effect'),
-      Type.Literal('analyze_palette')
-    ], {
-      description: 'Palette management action'
-    }),
-    colorMode: Type.Optional(Type.Union([
-      Type.Literal('2bpp'),
-      Type.Literal('4bpp'),
-      Type.Literal('8bpp')
-    ], {
-      description: 'SNES color mode (bits per pixel)'
-    })),
-    paletteSize: Type.Optional(Type.Number({
-      description: 'Number of colors in palette',
-      minimum: 2,
-      maximum: 256
-    })),
-    colors: Type.Optional(Type.Array(Type.String(), {
-      description: 'Array of color values (hex format: #RRGGBB)'
-    })),
-    startColor: Type.Optional(Type.String({
-      description: 'Starting color for gradient (hex format)'
-    })),
-    endColor: Type.Optional(Type.String({
-      description: 'Ending color for gradient (hex format)'
-    })),
-    steps: Type.Optional(Type.Number({
-      description: 'Number of steps in gradient',
-      minimum: 2,
-      maximum: 256
-    })),
-    filePath: Type.Optional(Type.String({
-      description: 'Input image file path for color extraction'
-    })),
-    paletteName: Type.Optional(Type.String({
-      description: 'Name for the generated palette'
-    })),
-    fadeFrames: Type.Optional(Type.Number({
-      description: 'Number of frames for fade effect',
-      minimum: 1,
-      maximum: 64
-    }))
+    action: Type.Union(
+      [
+        Type.Literal('create_palette'),
+        Type.Literal('convert_rgb_to_snes'),
+        Type.Literal('optimize_colors'),
+        Type.Literal('generate_gradient'),
+        Type.Literal('merge_palettes'),
+        Type.Literal('extract_from_image'),
+        Type.Literal('create_fade_effect'),
+        Type.Literal('analyze_palette'),
+      ],
+      {
+        description: 'Palette management action',
+      }
+    ),
+    colorMode: Type.Optional(
+      Type.Union(
+        [Type.Literal('2bpp'), Type.Literal('4bpp'), Type.Literal('8bpp')],
+        {
+          description: 'SNES color mode (bits per pixel)',
+        }
+      )
+    ),
+    paletteSize: Type.Optional(
+      Type.Number({
+        description: 'Number of colors in palette',
+        minimum: 2,
+        maximum: 256,
+      })
+    ),
+    colors: Type.Optional(
+      Type.Array(Type.String(), {
+        description: 'Array of color values (hex format: #RRGGBB)',
+      })
+    ),
+    startColor: Type.Optional(
+      Type.String({
+        description: 'Starting color for gradient (hex format)',
+      })
+    ),
+    endColor: Type.Optional(
+      Type.String({
+        description: 'Ending color for gradient (hex format)',
+      })
+    ),
+    steps: Type.Optional(
+      Type.Number({
+        description: 'Number of steps in gradient',
+        minimum: 2,
+        maximum: 256,
+      })
+    ),
+    filePath: Type.Optional(
+      Type.String({
+        description: 'Input image file path for color extraction',
+      })
+    ),
+    paletteName: Type.Optional(
+      Type.String({
+        description: 'Name for the generated palette',
+      })
+    ),
+    fadeFrames: Type.Optional(
+      Type.Number({
+        description: 'Number of frames for fade effect',
+        minimum: 1,
+        maximum: 64,
+      })
+    ),
   }),
   outputSchema: Type.Object({
     success: Type.Boolean(),
     message: Type.String(),
-    data: Type.Optional(Type.Object({
-      generatedFiles: Type.Optional(Type.Array(Type.String())),
-      paletteInfo: Type.Optional(Type.Object({
-        colorCount: Type.Number(),
-        snesFormat: Type.Array(Type.String()),
-        rgbFormat: Type.Array(Type.String()),
-        memoryUsage: Type.Number()
-      })),
-      codeSnippet: Type.Optional(Type.String()),
-      conversionData: Type.Optional(Type.String())
-    }))
+    data: Type.Optional(
+      Type.Object({
+        generatedFiles: Type.Optional(Type.Array(Type.String())),
+        paletteInfo: Type.Optional(
+          Type.Object({
+            colorCount: Type.Number(),
+            snesFormat: Type.Array(Type.String()),
+            rgbFormat: Type.Array(Type.String()),
+            memoryUsage: Type.Number(),
+          })
+        ),
+        codeSnippet: Type.Optional(Type.String()),
+        conversionData: Type.Optional(Type.String()),
+      })
+    ),
   }),
-  handler: async (input) => {
+  handler: async input => {
     try {
       const {
         action,
@@ -90,59 +115,79 @@ export const paletteManagerTool = createTypedTool({
         steps = 16,
         filePath,
         paletteName = 'default_palette',
-        fadeFrames = 16
+        fadeFrames = 16,
       } = input;
 
       // Determine palette size from color mode if not specified
-      const maxColors = paletteSize || (colorMode === '2bpp' ? 4 : colorMode === '4bpp' ? 16 : 256);
+      const maxColors =
+        paletteSize ||
+        (colorMode === '2bpp' ? 4 : colorMode === '4bpp' ? 16 : 256);
 
       switch (action) {
         case 'create_palette':
           return await createPalette(paletteName, maxColors, colorMode, colors);
-        
+
         case 'convert_rgb_to_snes':
           return await convertRgbToSnes(colors);
-        
+
         case 'optimize_colors':
           return await optimizeColors(colors, maxColors);
-        
+
         case 'generate_gradient':
-          return await generateGradient(startColor, endColor, steps, paletteName);
-        
+          return await generateGradient(
+            startColor,
+            endColor,
+            steps,
+            paletteName
+          );
+
         case 'merge_palettes':
           return await mergePalettes(colors, maxColors);
-        
+
         case 'extract_from_image':
           if (!filePath) {
-            return { success: false, message: 'filePath is required for color extraction' };
+            return {
+              success: false,
+              message: 'filePath is required for color extraction',
+            };
           }
           return await extractFromImage(filePath, maxColors, paletteName);
-        
+
         case 'create_fade_effect':
-          return await createFadeEffect(colors.length > 0 ? colors : ['#000000'], fadeFrames, paletteName);
-        
+          return await createFadeEffect(
+            colors.length > 0 ? colors : ['#000000'],
+            fadeFrames,
+            paletteName
+          );
+
         case 'analyze_palette':
           return await analyzePalette(colors, colorMode);
-        
+
         default:
           return { success: false, message: `Unknown action: ${action}` };
       }
     } catch (error) {
       return {
         success: false,
-        message: `Palette manager error: ${error instanceof Error ? error.message : 'Unknown error'}`
+        message: `Palette manager error: ${error instanceof Error ? error.message : 'Unknown error'}`,
       };
     }
-  }
+  },
 });
 
-async function createPalette(name: string, colorCount: number, colorMode: string, inputColors: string[]) {
+async function createPalette(
+  name: string,
+  colorCount: number,
+  colorMode: string,
+  inputColors: string[]
+) {
   // Generate default colors if none provided
-  const colors = inputColors.length > 0 ? inputColors : generateDefaultColors(colorCount);
-  
+  const colors =
+    inputColors.length > 0 ? inputColors : generateDefaultColors(colorCount);
+
   // Convert to SNES format
   const snesColors = colors.map(color => rgbToSnes(color));
-  
+
   // Generate palette header
   const paletteHeader = `#ifndef ${name.toUpperCase()}_PALETTE_H
 #define ${name.toUpperCase()}_PALETTE_H
@@ -268,16 +313,16 @@ void ${name}SnesToRgb(u16 snes_color, u8 *r, u8 *g, u8 *b) {
         colorCount,
         snesFormat: snesColors,
         rgbFormat: colors,
-        memoryUsage: colorCount * 2
+        memoryUsage: colorCount * 2,
       },
-      codeSnippet: `// Load and use palette\n${name}LoadPalette(0);\n${name}SetColor(1, ${name}RgbToSnes(255, 0, 0)); // Set color 1 to red`
-    }
+      codeSnippet: `// Load and use palette\n${name}LoadPalette(0);\n${name}SetColor(1, ${name}RgbToSnes(255, 0, 0)); // Set color 1 to red`,
+    },
   };
 }
 
 function generateDefaultColors(count: number): string[] {
   const colors = ['#000000']; // Start with black/transparent
-  
+
   if (count <= 4) {
     // 2bpp palette
     return ['#000000', '#555555', '#AAAAAA', '#FFFFFF'].slice(0, count);
@@ -299,21 +344,21 @@ function generateDefaultColors(count: number): string[] {
       '#C0C0C0', // 12: Light Gray
       '#800080', // 13: Purple
       '#808000', // 14: Olive
-      '#008080'  // 15: Teal
+      '#008080', // 15: Teal
     ].slice(0, count);
   } else {
     // 8bpp palette - generate systematic colors
     const palette = ['#000000']; // Black first
-    
+
     // Add grayscale ramp
     for (let i = 1; i < 16; i++) {
-      const gray = Math.floor(i * 255 / 15);
+      const gray = Math.floor((i * 255) / 15);
       palette.push(`#${gray.toString(16).padStart(2, '0').repeat(3)}`);
     }
-    
+
     // Add color ramps (red, green, blue, etc.)
     const baseHues = [0, 60, 120, 180, 240, 300]; // Red, Yellow, Green, Cyan, Blue, Magenta
-    
+
     for (const hue of baseHues) {
       for (let sat = 0; sat < 4; sat++) {
         for (let val = 0; val < 4; val++) {
@@ -325,7 +370,7 @@ function generateDefaultColors(count: number): string[] {
       }
       if (palette.length >= count) break;
     }
-    
+
     return palette.slice(0, count);
   }
 }
@@ -336,36 +381,57 @@ function rgbToSnes(hexColor: string): string {
   const r = parseInt(hex.substr(0, 2), 16);
   const g = parseInt(hex.substr(2, 2), 16);
   const b = parseInt(hex.substr(4, 2), 16);
-  
+
   // Convert to 5-bit per component
   const r5 = Math.floor(r / 8);
   const g5 = Math.floor(g / 8);
   const b5 = Math.floor(b / 8);
-  
+
   // Pack into SNES format: 0BBB_BBGG_GGGR_RRRR
   const snesColor = r5 | (g5 << 5) | (b5 << 10);
-  
+
   return `0x${snesColor.toString(16).padStart(4, '0').toUpperCase()}`;
 }
 
 function hsvToHex(h: number, s: number, v: number): string {
   const c = (v * s) / 255 / 255;
-  const x = c * (1 - Math.abs((h / 60) % 2 - 1));
+  const x = c * (1 - Math.abs(((h / 60) % 2) - 1));
   const m = v / 255 - c;
-  
-  let r = 0, g = 0, b = 0;
-  
-  if (h >= 0 && h < 60) { r = c; g = x; b = 0; }
-  else if (h >= 60 && h < 120) { r = x; g = c; b = 0; }
-  else if (h >= 120 && h < 180) { r = 0; g = c; b = x; }
-  else if (h >= 180 && h < 240) { r = 0; g = x; b = c; }
-  else if (h >= 240 && h < 300) { r = x; g = 0; b = c; }
-  else if (h >= 300 && h < 360) { r = c; g = 0; b = x; }
-  
+
+  let r = 0,
+    g = 0,
+    b = 0;
+
+  if (h >= 0 && h < 60) {
+    r = c;
+    g = x;
+    b = 0;
+  } else if (h >= 60 && h < 120) {
+    r = x;
+    g = c;
+    b = 0;
+  } else if (h >= 120 && h < 180) {
+    r = 0;
+    g = c;
+    b = x;
+  } else if (h >= 180 && h < 240) {
+    r = 0;
+    g = x;
+    b = c;
+  } else if (h >= 240 && h < 300) {
+    r = x;
+    g = 0;
+    b = c;
+  } else if (h >= 300 && h < 360) {
+    r = c;
+    g = 0;
+    b = x;
+  }
+
   r = Math.floor((r + m) * 255);
   g = Math.floor((g + m) * 255);
   b = Math.floor((b + m) * 255);
-  
+
   return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
 }
 
@@ -374,15 +440,15 @@ async function convertRgbToSnes(colors: string[]) {
     const snes = rgbToSnes(color);
     return { rgb: color, snes };
   });
-  
+
   const conversionTable = `// RGB to SNES Color Conversion Table
 // Format: RGB → SNES 15-bit (0BBB_BBGG_GGGR_RRRR)
 
-${conversions.map(({rgb, snes}) => `// ${rgb} → ${snes}`).join('\n')}
+${conversions.map(({ rgb, snes }) => `// ${rgb} → ${snes}`).join('\n')}
 
 // C Array format:
 const u16 converted_colors[] = {
-${conversions.map(({snes}) => `    ${snes},`).join('\n')}
+${conversions.map(({ snes }) => `    ${snes},`).join('\n')}
 };
 
 // Conversion function:
@@ -401,10 +467,10 @@ u16 rgbToSnes(u8 r, u8 g, u8 b) {
         colorCount: colors.length,
         snesFormat: conversions.map(c => c.snes),
         rgbFormat: colors,
-        memoryUsage: colors.length * 2
+        memoryUsage: colors.length * 2,
       },
-      conversionData: conversionTable
-    }
+      conversionData: conversionTable,
+    },
   };
 }
 
@@ -418,12 +484,12 @@ async function optimizeColors(colors: string[], maxColors: number) {
           colorCount: colors.length,
           snesFormat: colors.map(rgbToSnes),
           rgbFormat: colors,
-          memoryUsage: colors.length * 2
-        }
-      }
+          memoryUsage: colors.length * 2,
+        },
+      },
     };
   }
-  
+
   const optimizationTips = `# Color Palette Optimization
 
 ## Current Status:
@@ -474,36 +540,41 @@ async function optimizeColors(colors: string[], maxColors: number) {
         colorCount: colors.length,
         snesFormat: colors.slice(0, maxColors).map(rgbToSnes),
         rgbFormat: colors.slice(0, maxColors),
-        memoryUsage: maxColors * 2
-      }
-    }
+        memoryUsage: maxColors * 2,
+      },
+    },
   };
 }
 
-async function generateGradient(startColor: string, endColor: string, steps: number, name: string) {
+async function generateGradient(
+  startColor: string,
+  endColor: string,
+  steps: number,
+  name: string
+) {
   const gradient = [];
-  
+
   // Parse start and end colors
   const startR = parseInt(startColor.substr(1, 2), 16);
   const startG = parseInt(startColor.substr(3, 2), 16);
   const startB = parseInt(startColor.substr(5, 2), 16);
-  
+
   const endR = parseInt(endColor.substr(1, 2), 16);
   const endG = parseInt(endColor.substr(3, 2), 16);
   const endB = parseInt(endColor.substr(5, 2), 16);
-  
+
   // Generate gradient steps
   for (let i = 0; i < steps; i++) {
     const factor = i / (steps - 1);
-    
+
     const r = Math.round(startR + (endR - startR) * factor);
     const g = Math.round(startG + (endG - startG) * factor);
     const b = Math.round(startB + (endB - startB) * factor);
-    
+
     const hexColor = `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
     gradient.push(hexColor);
   }
-  
+
   // Generate gradient palette code
   const gradientHeader = `// Gradient Palette: ${name}
 // From: ${startColor} to ${endColor} (${steps} steps)
@@ -566,10 +637,10 @@ void ${name}AnimateGradient(u8 speed) {
         colorCount: steps,
         snesFormat: gradient.map(rgbToSnes),
         rgbFormat: gradient,
-        memoryUsage: steps * 2
+        memoryUsage: steps * 2,
       },
-      codeSnippet: `// Load and animate gradient\n${name}LoadGradient(0);\n${name}AnimateGradient(4); // Animate every 4 frames`
-    }
+      codeSnippet: `// Load and animate gradient\n${name}LoadGradient(0);\n${name}AnimateGradient(4); // Animate every 4 frames`,
+    },
   };
 }
 
@@ -620,15 +691,19 @@ const u16 merged_palette[${maxColors}] = {
         colorCount: Math.min(paletteColors.length, maxColors),
         snesFormat: paletteColors.slice(0, maxColors).map(rgbToSnes),
         rgbFormat: paletteColors.slice(0, maxColors),
-        memoryUsage: maxColors * 2
-      }
-    }
+        memoryUsage: maxColors * 2,
+      },
+    },
   };
 }
 
-async function extractFromImage(filePath: string, maxColors: number, paletteName: string) {
+async function extractFromImage(
+  filePath: string,
+  maxColors: number,
+  paletteName: string
+) {
   const basename = path.basename(filePath, path.extname(filePath));
-  
+
   const extractionScript = `#!/bin/bash
 # Color Extraction Script for ${basename}
 
@@ -738,37 +813,41 @@ echo "  - \${OUTPUT_NAME}_extracted.txt"`;
     data: {
       generatedFiles: [`extract_${basename}.sh`, `extract_${basename}.scm`],
       conversionData: extractionScript,
-      codeSnippet: gimpScript
-    }
+      codeSnippet: gimpScript,
+    },
   };
 }
 
-async function createFadeEffect(colors: string[], fadeFrames: number, paletteName: string) {
+async function createFadeEffect(
+  colors: string[],
+  fadeFrames: number,
+  paletteName: string
+) {
   const fadeToBlack = [];
   const fadeFromBlack = [];
-  
+
   // Generate fade-to-black frames
   for (let frame = 0; frame < fadeFrames; frame++) {
-    const factor = 1 - (frame / (fadeFrames - 1));
+    const factor = 1 - frame / (fadeFrames - 1);
     const frameColors = colors.map(color => {
       const r = parseInt(color.substr(1, 2), 16);
       const g = parseInt(color.substr(3, 2), 16);
       const b = parseInt(color.substr(5, 2), 16);
-      
+
       const newR = Math.floor(r * factor);
       const newG = Math.floor(g * factor);
       const newB = Math.floor(b * factor);
-      
+
       return `#${newR.toString(16).padStart(2, '0')}${newG.toString(16).padStart(2, '0')}${newB.toString(16).padStart(2, '0')}`;
     });
     fadeToBlack.push(frameColors);
   }
-  
+
   // Generate fade-from-black frames (reverse)
   for (let frame = 0; frame < fadeFrames; frame++) {
     fadeFromBlack.push(fadeToBlack[fadeFrames - 1 - frame]);
   }
-  
+
   const fadeHeader = `// Fade Effect System for ${paletteName}
 #ifndef ${paletteName.toUpperCase()}_FADE_H
 #define ${paletteName.toUpperCase()}_FADE_H
@@ -813,9 +892,12 @@ fade_state_t fade_state = {0, 0, FADE_TO_BLACK, false, 1};
 
 // Fade-to-black frames
 const u16 ${paletteName}_fade_frames[FADE_FRAMES][FADE_COLORS] = {
-${fadeToBlack.map((frame, i) => 
-  `    { // Frame ${i}\n${frame.map(color => `        ${rgbToSnes(color)},`).join('\n')}\n    },`
-).join('\n')}
+${fadeToBlack
+  .map(
+    (frame, i) =>
+      `    { // Frame ${i}\n${frame.map(color => `        ${rgbToSnes(color)},`).join('\n')}\n    },`
+  )
+  .join('\n')}
 };
 
 void ${paletteName}FadeInit(void) {
@@ -889,16 +971,16 @@ void ${paletteName}FadeStop(void) {
         colorCount: colors.length,
         snesFormat: colors.map(rgbToSnes),
         rgbFormat: colors,
-        memoryUsage: colors.length * 2 * fadeFrames
+        memoryUsage: colors.length * 2 * fadeFrames,
       },
-      codeSnippet: `// Use fade effect\n${paletteName}FadeInit();\n${paletteName}FadeStart(FADE_TO_BLACK, 2); // Fade to black over 2 frames\n\n// In main loop:\n${paletteName}FadeUpdate();`
-    }
+      codeSnippet: `// Use fade effect\n${paletteName}FadeInit();\n${paletteName}FadeStart(FADE_TO_BLACK, 2); // Fade to black over 2 frames\n\n// In main loop:\n${paletteName}FadeUpdate();`,
+    },
   };
 }
 
 async function analyzePalette(colors: string[], colorMode: string) {
   const maxColors = colorMode === '2bpp' ? 4 : colorMode === '4bpp' ? 16 : 256;
-  
+
   // Analyze color distribution
   const analysis = {
     totalColors: colors.length,
@@ -908,17 +990,17 @@ async function analyzePalette(colors: string[], colorMode: string) {
     colorStats: {
       brightness: 0,
       contrast: 0,
-      saturation: 0
-    }
+      saturation: 0,
+    },
   };
-  
+
   // Find duplicates
   const colorSet = new Set(colors);
   analysis.duplicates = colors.length - colorSet.size;
-  
+
   // Get most frequent colors (simplified)
   analysis.dominantColors = colors.slice(0, Math.min(5, colors.length));
-  
+
   const analysisReport = `# Palette Analysis Report
 
 ## Basic Statistics:
@@ -963,9 +1045,9 @@ ${analysis.utilization < 50 ? '- Consider using smaller color mode for memory sa
         colorCount: colors.length,
         snesFormat: colors.map(rgbToSnes),
         rgbFormat: colors,
-        memoryUsage: colors.length * 2
+        memoryUsage: colors.length * 2,
       },
-      conversionData: analysisReport
-    }
+      conversionData: analysisReport,
+    },
   };
 }

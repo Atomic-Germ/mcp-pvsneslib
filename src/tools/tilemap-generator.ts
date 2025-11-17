@@ -5,85 +5,114 @@ import path from 'path';
 
 /**
  * SNES Tilemap Generator Tool
- * 
+ *
  * Creates and manages tilemaps for SNES backgrounds, including
  * level editors, collision maps, and tile-based game worlds for PVSnesLib.
  */
 export const tilemapGeneratorTool = createTypedTool({
   name: 'tilemap_generator',
-  description: 'Generate SNES tilemaps - levels, backgrounds, collision maps for PVSnesLib',
+  description:
+    'Generate SNES tilemaps - levels, backgrounds, collision maps for PVSnesLib',
   inputSchema: Type.Object({
-    action: Type.Union([
-      Type.Literal('create_tilemap'),
-      Type.Literal('convert_tiled_map'),
-      Type.Literal('generate_collision'),
-      Type.Literal('create_level_editor'),
-      Type.Literal('optimize_map'),
-      Type.Literal('generate_parallax'),
-      Type.Literal('create_minimap')
-    ], {
-      description: 'Tilemap generation action'
-    }),
-    mapWidth: Type.Optional(Type.Number({
-      description: 'Map width in tiles',
-      minimum: 1,
-      maximum: 1024
-    })),
-    mapHeight: Type.Optional(Type.Number({
-      description: 'Map height in tiles',
-      minimum: 1,
-      maximum: 1024
-    })),
-    tileSize: Type.Optional(Type.Union([
-      Type.Literal('8x8'),
-      Type.Literal('16x16'),
-      Type.Literal('32x32')
-    ], {
-      description: 'Individual tile size'
-    })),
-    mapMode: Type.Optional(Type.Union([
-      Type.Literal('32x32'),
-      Type.Literal('32x64'),
-      Type.Literal('64x32'),
-      Type.Literal('64x64')
-    ], {
-      description: 'SNES background map size'
-    })),
-    filePath: Type.Optional(Type.String({
-      description: 'Input file path (for conversions)'
-    })),
-    outputFormat: Type.Optional(Type.Union([
-      Type.Literal('binary'),
-      Type.Literal('c_array'),
-      Type.Literal('assembly'),
-      Type.Literal('compressed')
-    ], {
-      description: 'Output format for map data'
-    })),
-    includeCollision: Type.Optional(Type.Boolean({
-      description: 'Generate collision detection data'
-    })),
-    levelName: Type.Optional(Type.String({
-      description: 'Name for the level/map'
-    }))
+    action: Type.Union(
+      [
+        Type.Literal('create_tilemap'),
+        Type.Literal('convert_tiled_map'),
+        Type.Literal('generate_collision'),
+        Type.Literal('create_level_editor'),
+        Type.Literal('optimize_map'),
+        Type.Literal('generate_parallax'),
+        Type.Literal('create_minimap'),
+      ],
+      {
+        description: 'Tilemap generation action',
+      }
+    ),
+    mapWidth: Type.Optional(
+      Type.Number({
+        description: 'Map width in tiles',
+        minimum: 1,
+        maximum: 1024,
+      })
+    ),
+    mapHeight: Type.Optional(
+      Type.Number({
+        description: 'Map height in tiles',
+        minimum: 1,
+        maximum: 1024,
+      })
+    ),
+    tileSize: Type.Optional(
+      Type.Union(
+        [Type.Literal('8x8'), Type.Literal('16x16'), Type.Literal('32x32')],
+        {
+          description: 'Individual tile size',
+        }
+      )
+    ),
+    mapMode: Type.Optional(
+      Type.Union(
+        [
+          Type.Literal('32x32'),
+          Type.Literal('32x64'),
+          Type.Literal('64x32'),
+          Type.Literal('64x64'),
+        ],
+        {
+          description: 'SNES background map size',
+        }
+      )
+    ),
+    filePath: Type.Optional(
+      Type.String({
+        description: 'Input file path (for conversions)',
+      })
+    ),
+    outputFormat: Type.Optional(
+      Type.Union(
+        [
+          Type.Literal('binary'),
+          Type.Literal('c_array'),
+          Type.Literal('assembly'),
+          Type.Literal('compressed'),
+        ],
+        {
+          description: 'Output format for map data',
+        }
+      )
+    ),
+    includeCollision: Type.Optional(
+      Type.Boolean({
+        description: 'Generate collision detection data',
+      })
+    ),
+    levelName: Type.Optional(
+      Type.String({
+        description: 'Name for the level/map',
+      })
+    ),
   }),
   outputSchema: Type.Object({
     success: Type.Boolean(),
     message: Type.String(),
-    data: Type.Optional(Type.Object({
-      generatedFiles: Type.Optional(Type.Array(Type.String())),
-      mapInfo: Type.Optional(Type.Object({
-        width: Type.Number(),
-        height: Type.Number(),
-        tileCount: Type.Number(),
-        memoryUsage: Type.Number(),
-        compressionRatio: Type.Optional(Type.Number())
-      })),
-      codeSnippet: Type.Optional(Type.String()),
-      instructions: Type.Optional(Type.String())
-    }))
+    data: Type.Optional(
+      Type.Object({
+        generatedFiles: Type.Optional(Type.Array(Type.String())),
+        mapInfo: Type.Optional(
+          Type.Object({
+            width: Type.Number(),
+            height: Type.Number(),
+            tileCount: Type.Number(),
+            memoryUsage: Type.Number(),
+            compressionRatio: Type.Optional(Type.Number()),
+          })
+        ),
+        codeSnippet: Type.Optional(Type.String()),
+        instructions: Type.Optional(Type.String()),
+      })
+    ),
   }),
-  handler: async (input) => {
+  handler: async input => {
     try {
       const {
         action,
@@ -94,47 +123,61 @@ export const tilemapGeneratorTool = createTypedTool({
         filePath,
         outputFormat = 'c_array',
         includeCollision = false,
-        levelName = 'level1'
+        levelName = 'level1',
       } = input;
 
       switch (action) {
         case 'create_tilemap':
-          return await createTilemap(levelName, mapWidth, mapHeight, tileSize, mapMode, outputFormat, includeCollision);
-        
+          return await createTilemap(
+            levelName,
+            mapWidth,
+            mapHeight,
+            tileSize,
+            mapMode,
+            outputFormat,
+            includeCollision
+          );
+
         case 'convert_tiled_map':
           if (!filePath) {
-            return { success: false, message: 'filePath is required for Tiled map conversion' };
+            return {
+              success: false,
+              message: 'filePath is required for Tiled map conversion',
+            };
           }
           return await convertTiledMap(filePath, outputFormat);
-        
+
         case 'generate_collision':
           return await generateCollisionMap(levelName, mapWidth, mapHeight);
-        
+
         case 'create_level_editor':
           return await createLevelEditor(tileSize, mapMode);
-        
+
         case 'optimize_map':
           if (!filePath) {
-            return { success: false, message: 'filePath is required for map optimization' };
+            return {
+              success: false,
+              message: 'filePath is required for map optimization',
+            };
           }
           return await optimizeMap(filePath);
-        
+
         case 'generate_parallax':
           return await generateParallaxLayers(mapWidth, mapHeight, mapMode);
-        
+
         case 'create_minimap':
           return await createMinimap(levelName, mapWidth, mapHeight);
-        
+
         default:
           return { success: false, message: `Unknown action: ${action}` };
       }
     } catch (error) {
       return {
         success: false,
-        message: `Tilemap generator error: ${error instanceof Error ? error.message : 'Unknown error'}`
+        message: `Tilemap generator error: ${error instanceof Error ? error.message : 'Unknown error'}`,
       };
     }
-  }
+  },
 });
 
 async function createTilemap(
@@ -148,7 +191,7 @@ async function createTilemap(
 ) {
   const totalTiles = mapWidth * mapHeight;
   const memoryUsage = totalTiles * 2; // 16-bit per tile entry
-  
+
   // Generate tilemap header
   const mapHeader = `#ifndef ${levelName.toUpperCase()}_MAP_H
 #define ${levelName.toUpperCase()}_MAP_H
@@ -180,10 +223,14 @@ void ${levelName}Init(void);
 void ${levelName}LoadMap(u16 bg_layer);
 u16 ${levelName}GetTile(u16 x, u16 y);
 void ${levelName}SetTile(u16 x, u16 y, u16 tile_id);
-${includeCollision ? `
+${
+  includeCollision
+    ? `
 u8 ${levelName}GetCollision(u16 x, u16 y);
 bool ${levelName}IsColliding(u16 pixel_x, u16 pixel_y);
-` : ''}
+`
+    : ''
+}
 
 #endif // ${levelName.toUpperCase()}_MAP_H`;
 
@@ -196,13 +243,17 @@ const u16 ${levelName}_map_data[${totalTiles}] = {
     ${generateMapDataRows(mapWidth, mapHeight, outputFormat)}
 };
 
-${includeCollision ? `
+${
+  includeCollision
+    ? `
 // Collision data (1 byte per tile)
 // 0 = passable, 1 = solid, 2 = water, 3 = damage, etc.
 const u8 ${levelName}_collision_data[${totalTiles}] = {
     ${generateCollisionData(mapWidth, mapHeight)}
 };
-` : ''}
+`
+    : ''
+}
 
 void ${levelName}Init(void) {
     consoleWrite("Loading ${levelName} map...\\n");
@@ -230,7 +281,9 @@ void ${levelName}SetTile(u16 x, u16 y, u16 tile_id) {
     // dmaCopyVram(&tile_id, vram_addr, 2);
 }
 
-${includeCollision ? `
+${
+  includeCollision
+    ? `
 u8 ${levelName}GetCollision(u16 x, u16 y) {
     if (x >= ${mapWidth} || y >= ${mapHeight}) return 1; // Solid outside bounds
     return ${levelName}_collision_data[y * ${mapWidth} + x];
@@ -241,7 +294,9 @@ bool ${levelName}IsColliding(u16 pixel_x, u16 pixel_y) {
     u16 tile_y = pixel_y / ${tileSize.split('x')[1]};
     return ${levelName}GetCollision(tile_x, tile_y) != 0;
 }
-` : ''}`;
+`
+    : ''
+}`;
 
   // Generate level editor template
   const editorTemplate = `// Level Editor for ${levelName}
@@ -280,33 +335,41 @@ void ${levelName}EditorLoad(const char *filename);
       generatedFiles: [
         `${levelName}_map.h`,
         `${levelName}_map.c`,
-        `${levelName}_editor.h`
+        `${levelName}_editor.h`,
       ].concat(includeCollision ? [`${levelName}_collision.h`] : []),
       mapInfo: {
         width: mapWidth,
         height: mapHeight,
         tileCount: totalTiles,
-        memoryUsage
+        memoryUsage,
       },
-      codeSnippet: `// Initialize and use tilemap\n${levelName}Init();\n${levelName}LoadMap(0); // Load to BG0\n\n// Check collision\nif (${levelName}IsColliding(player_x, player_y)) {\n    // Handle collision\n}`
-    }
+      codeSnippet: `// Initialize and use tilemap\n${levelName}Init();\n${levelName}LoadMap(0); // Load to BG0\n\n// Check collision\nif (${levelName}IsColliding(player_x, player_y)) {\n    // Handle collision\n}`,
+    },
   };
 }
 
-function generateMapDataRows(width: number, height: number, format: string): string {
+function generateMapDataRows(
+  width: number,
+  height: number,
+  format: string
+): string {
   const rows = [];
   for (let y = 0; y < height; y++) {
     const tiles = [];
     for (let x = 0; x < width; x++) {
       // Generate sample tile data
       let tileId = 0;
-      if (y === 0 || y === height - 1) tileId = 1; // Top/bottom border
-      else if (x === 0 || x === width - 1) tileId = 2; // Side border
+      if (y === 0 || y === height - 1)
+        tileId = 1; // Top/bottom border
+      else if (x === 0 || x === width - 1)
+        tileId = 2; // Side border
       else if (Math.random() > 0.8) tileId = 3; // Random objects
-      
+
       tiles.push(`0x${tileId.toString(16).padStart(4, '0').toUpperCase()}`);
     }
-    rows.push(`    // Row ${y}\n    ${tiles.join(', ')}${y < height - 1 ? ',' : ''}`);
+    rows.push(
+      `    // Row ${y}\n    ${tiles.join(', ')}${y < height - 1 ? ',' : ''}`
+    );
   }
   return rows.join('\n');
 }
@@ -330,7 +393,7 @@ function generateCollisionData(width: number, height: number): string {
 
 async function convertTiledMap(filePath: string, outputFormat: string) {
   const basename = path.basename(filePath, path.extname(filePath));
-  
+
   const conversionScript = `#!/bin/bash
 # Convert Tiled map to SNES format
 
@@ -439,12 +502,16 @@ Add custom properties to tiles for SNES-specific data:
     data: {
       generatedFiles: [`convert_${basename}.sh`, `tiled_integration_guide.md`],
       instructions: tiledIntegration,
-      codeSnippet: conversionScript
-    }
+      codeSnippet: conversionScript,
+    },
   };
 }
 
-async function generateCollisionMap(levelName: string, mapWidth: number, mapHeight: number) {
+async function generateCollisionMap(
+  levelName: string,
+  mapWidth: number,
+  mapHeight: number
+) {
   const collisionHeader = `// Collision System for ${levelName}
 #ifndef ${levelName.toUpperCase()}_COLLISION_H
 #define ${levelName.toUpperCase()}_COLLISION_H
@@ -564,10 +631,10 @@ bool ${levelName}IsOnGround(u16 x, u16 y, u16 w, u16 h) {
         width: mapWidth,
         height: mapHeight,
         tileCount: mapWidth * mapHeight,
-        memoryUsage: mapWidth * mapHeight // 1 byte per tile for collision
+        memoryUsage: mapWidth * mapHeight, // 1 byte per tile for collision
       },
-      codeSnippet: `// Check collision before moving\nif (${levelName}CanMoveRight(player_x, player_y, 16, 16)) {\n    player_x += speed;\n}\n\n// Check for special collision types\nif (${levelName}CheckCollision(player_x, player_y, COLLISION_WATER)) {\n    // Player is in water\n}`
-    }
+      codeSnippet: `// Check collision before moving\nif (${levelName}CanMoveRight(player_x, player_y, 16, 16)) {\n    player_x += speed;\n}\n\n// Check for special collision types\nif (${levelName}CheckCollision(player_x, player_y, COLLISION_WATER)) {\n    // Player is in water\n}`,
+    },
   };
 }
 
@@ -763,14 +830,14 @@ void editorHandleInput(u16 pad) {
     message: `Generated level editor system for ${tileSize} tiles, ${mapMode} mode`,
     data: {
       generatedFiles: ['level_editor.h', 'level_editor.c', 'editor_ui.c'],
-      codeSnippet: `// Initialize and run level editor\neditorInit();\n\n// Main editor loop\nwhile(1) {\n    editorUpdate();\n    editorRender();\n    WaitForVBlank();\n}`
-    }
+      codeSnippet: `// Initialize and run level editor\neditorInit();\n\n// Main editor loop\nwhile(1) {\n    editorUpdate();\n    editorRender();\n    WaitForVBlank();\n}`,
+    },
   };
 }
 
 async function optimizeMap(filePath: string) {
   const basename = path.basename(filePath, path.extname(filePath));
-  
+
   const optimizationScript = `#!/bin/bash
 # Map Optimization Script for ${basename}
 
@@ -838,12 +905,16 @@ echo "Optimization complete!"`;
     data: {
       generatedFiles: [`optimize_${basename}.sh`],
       instructions: optimizationTips,
-      codeSnippet: optimizationScript
-    }
+      codeSnippet: optimizationScript,
+    },
   };
 }
 
-async function generateParallaxLayers(mapWidth: number, mapHeight: number, mapMode: string) {
+async function generateParallaxLayers(
+  mapWidth: number,
+  mapHeight: number,
+  mapMode: string
+) {
   const parallaxSystem = `// Parallax Background System
 #ifndef PARALLAX_H
 #define PARALLAX_H
@@ -947,14 +1018,18 @@ void setupParallaxDemo(void) {
         width: mapWidth,
         height: mapHeight,
         tileCount: mapWidth * mapHeight * 4, // 4 layers
-        memoryUsage: mapWidth * mapHeight * 2 * 4 // 4 layers of map data
+        memoryUsage: mapWidth * mapHeight * 2 * 4, // 4 layers of map data
       },
-      codeSnippet: `// Setup and use parallax layers\nparallaxInit();\nsetupParallaxDemo();\n\n// Update each frame\nparallaxUpdate(camera_x, camera_y);`
-    }
+      codeSnippet: `// Setup and use parallax layers\nparallaxInit();\nsetupParallaxDemo();\n\n// Update each frame\nparallaxUpdate(camera_x, camera_y);`,
+    },
   };
 }
 
-async function createMinimap(levelName: string, mapWidth: number, mapHeight: number) {
+async function createMinimap(
+  levelName: string,
+  mapWidth: number,
+  mapHeight: number
+) {
   const minimapSystem = `// Minimap System for ${levelName}
 #ifndef MINIMAP_H
 #define MINIMAP_H
@@ -1115,9 +1190,10 @@ u8 minimapGetPixel(u8 x, u8 y) {
         width: 32,
         height: 32,
         tileCount: 32 * 32,
-        memoryUsage: 32 * 32 + Math.ceil(mapWidth / 8) * Math.ceil(mapHeight / 8)
+        memoryUsage:
+          32 * 32 + Math.ceil(mapWidth / 8) * Math.ceil(mapHeight / 8),
       },
-      codeSnippet: `// Initialize and use minimap\nminimapInit();\n\n// Update each frame\nminimapUpdate(player_x, player_y);\nminimapRender(200, 8); // Draw at top-right corner`
-    }
+      codeSnippet: `// Initialize and use minimap\nminimapInit();\n\n// Update each frame\nminimapUpdate(player_x, player_y);\nminimapRender(200, 8); // Draw at top-right corner`,
+    },
   };
 }

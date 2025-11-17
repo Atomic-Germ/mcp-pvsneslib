@@ -204,7 +204,11 @@ export class SandboxedFileReader {
         // Filter by allowed extensions for files
         if (entry.isFile()) {
           const ext = path.extname(entry.name);
-          if (this.allowedExtensions.size === 0 || ext === '' || this.allowedExtensions.has(ext)) {
+          if (
+            this.allowedExtensions.size === 0 ||
+            ext === '' ||
+            this.allowedExtensions.has(ext)
+          ) {
             files.push(entry.name);
           }
         } else if (entry.isDirectory()) {

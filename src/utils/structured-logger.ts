@@ -83,11 +83,7 @@ export class StructuredLogger extends EventEmitter {
     this.createLogEntry('error', message, context);
   }
 
-  logError(
-    message: string,
-    error: Error,
-    context?: Record<string, any>
-  ): void {
+  logError(message: string, error: Error, context?: Record<string, any>): void {
     this.createLogEntry('error', message, {
       errorMessage: error.message,
       errorStack: error.stack,
