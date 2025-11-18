@@ -130,8 +130,26 @@ async function validateExistingInstallation(
 }
 
 async function downloadPVSnesLib(version: string, downloadDir: string): Promise<string> {
-  const downloadUrl = `https://github.com/alekmaul/pvsneslib/archive/refs/tags/${version}.tar.gz`;
-  const downloadPath = join(downloadDir, `pvsneslib-${version}.tar.gz`);
+  // Determine platform-specific release URL
+  const platform = process.platform;
+  let releaseFile: string;
+  
+  switch (platform) {
+    case 'linux':
+      releaseFile = `pvsneslib_430_64b_linux_release.zip`;
+      break;
+    case 'win32':
+      releaseFile = `pvsneslib_430_64b_windows_release.zip`;
+      break;
+    case 'darwin':
+      releaseFile = `pvsneslib_430_64b_darwin_release.zip`;
+      break;
+    default:
+      throw new Error(`Unsupported platform: ${platform}. Supported platforms: linux, windows, darwin`);
+  }
+  
+  const downloadUrl = `https://github.com/alekmaul/pvsneslib/releases/download/${version}/${releaseFile}`;
+  const downloadPath = join(downloadDir, releaseFile);
 
   try {
     // Check if curl or wget is available
@@ -165,27 +183,61 @@ async function extractPVSnesLib(archivePath: string, extractPath: string): Promi
     // Create extraction directory
     await fs.mkdir(extractPath, { recursive: true });
 
-    // Check if tar is available
-    const hasTar = await checkCommandExists('tar');
+    // Determine extraction method based on file extension
+    const isZip = archivePath.endsWith('.zip');
     
-    if (!hasTar) {
-      throw new Error('tar command not found - required for extraction');
+    if (isZip) {
+      // Check if unzip is available
+      const hasUnzip = await checkCommandExists('unzip');
+      
+      if (!hasUnzip) {
+        throw new Error('unzip command not found - required for ZIP extraction');
+      }
+
+      // Extract ZIP file to a temporary location first
+      const tempDir = join(extractPath, '..', 'temp_extract');
+      await fs.mkdir(tempDir, { recursive: true });
+      
+      await execAsync(`unzip -q "${archivePath}" -d "${tempDir}"`);
+      
+      // Check if the ZIP contains a pvsneslib subdirectory and move contents up
+      const tempContents = await fs.readdir(tempDir);
+      
+      if (tempContents.length === 1 && tempContents[0] === 'pvsneslib') {
+        // Move contents from pvsneslib subdirectory to target directory
+        await execAsync(`mv "${tempDir}/pvsneslib/"* "${extractPath}/"`);
+        await execAsync(`mv "${tempDir}/pvsneslib/".[!.]* "${extractPath}/" 2>/dev/null || true`);
+      } else {
+        // Move all contents directly
+        await execAsync(`mv "${tempDir}/"* "${extractPath}/"`);
+        await execAsync(`mv "${tempDir}/".[!.]* "${extractPath}/" 2>/dev/null || true`);
+      }
+      
+      // Clean up temp directory
+      await fs.rm(tempDir, { recursive: true, force: true });
+    } else {
+      // Handle tar.gz (fallback for source archives)
+      const hasTar = await checkCommandExists('tar');
+      
+      if (!hasTar) {
+        throw new Error('tar command not found - required for tar.gz extraction');
+      }
+
+      // Extract using tar
+      const tempDir = join(extractPath, '..', 'temp_extract');
+      await fs.mkdir(tempDir, { recursive: true });
+
+      await execAsync(`tar -xzf "${archivePath}" -C "${tempDir}" --strip-components=1`);
+
+      // Move contents from temp directory to final location
+      await execAsync(`cp -r "${tempDir}/"* "${extractPath}/"`);
+      
+      // Clean up temp directory
+      await fs.rm(tempDir, { recursive: true, force: true });
     }
-
-    // Extract using tar
-    // The GitHub archive creates a directory with format: pvsneslib-<version>
-    // We need to extract and move contents to our target directory
-    const tempDir = join(extractPath, '..', 'temp_extract');
-    await fs.mkdir(tempDir, { recursive: true });
-
-    await execAsync(`tar -xzf "${archivePath}" -C "${tempDir}" --strip-components=1`);
-
-    // Move contents from temp directory to final location
-    await execAsync(`cp -r "${tempDir}/"* "${extractPath}/"`);
     
-    // Clean up
-    await fs.rm(tempDir, { recursive: true, force: true });
-    await fs.rm(archivePath, { force: true }); // Remove downloaded archive
+    // Clean up downloaded archive
+    await fs.rm(archivePath, { force: true });
 
   } catch (error) {
     throw new Error(`Failed to extract PVSnesLib: ${error instanceof Error ? error.message : String(error)}`);

@@ -7,6 +7,69 @@ import { createTypedTool } from './typed-tool-system.js';
 
 const execAsync = promisify(exec);
 
+interface BinaryCompatibilityInfo {
+  isCompatible: boolean;
+  emulationType?: 'native' | 'fex' | 'qemu' | 'unknown';
+  issues: string[];
+  suggestions: string[];
+}
+
+async function checkBinaryCompatibility(binaryPath: string): Promise<BinaryCompatibilityInfo> {
+  const result: BinaryCompatibilityInfo = {
+    isCompatible: true,
+    emulationType: 'native',
+    issues: [],
+    suggestions: [],
+  };
+
+  try {
+    // First, check if binary exists
+    await fs.access(binaryPath, fs.constants.F_OK);
+    
+    // Check binary architecture
+    const { stdout: fileOutput } = await execAsync(`file "${binaryPath}"`);
+    
+    // Detect if we're on ARM64 with x86-64 binary
+    const isX86Binary = fileOutput.includes('x86-64') || fileOutput.includes('i386');
+    const isARM64System = process.arch === 'arm64';  // Node.js uses 'arm64' for aarch64
+    
+    if (isX86Binary && isARM64System) {
+      result.emulationType = 'unknown';
+      
+      // Test basic execution to detect emulation layer
+      try {
+        const { stderr } = await execAsync(`"${binaryPath}" 2>&1 || true`, { timeout: 5000 });
+        
+        if (stderr.includes('FEX') || stderr.includes('binfmt_dispatcher')) {
+          result.emulationType = 'fex';
+          
+          // Test for known FEX issues
+          if (stderr.includes('unrecognized character \\x7f') || 
+              stderr.includes('cannot specify multiple files')) {
+            result.isCompatible = false;
+            result.issues.push('FEX emulation binary compatibility issue detected');
+            result.issues.push('Binary may be using unsupported ELF features or argument parsing');
+            result.suggestions.push('Consider using QEMU user-mode emulation: qemu-x86_64-static');
+            result.suggestions.push('Look for native ARM64 builds or source compilation');
+            result.suggestions.push('Use containerized x86-64 development environment');
+          }
+        } else if (stderr.includes('qemu')) {
+          result.emulationType = 'qemu';
+        }
+      } catch (error) {
+        result.issues.push(`Binary execution test failed: ${(error as Error).message}`);
+        result.suggestions.push('Binary may require different emulation approach');
+      }
+    }
+    
+    return result;
+  } catch (error) {
+    result.isCompatible = false;
+    result.issues.push(`Binary not accessible: ${(error as Error).message}`);
+    return result;
+  }
+}
+
 interface ConfigurationRequest {
   installPath?: string;
   projectPath?: string;
@@ -209,53 +272,65 @@ async function configureAllTools(
       // Check if tool exists
       await fs.access(toolPath, fs.constants.F_OK);
       
-      // Try to get version (many tools don't support --version, so we'll be flexible)
-      try {
-        let versionOutput = '';
+      // Check binary compatibility (especially important for emulated environments)
+      const compatibilityInfo = await checkBinaryCompatibility(toolPath);
+      
+      if (!compatibilityInfo.isCompatible) {
+        tool.status = 'error';
+        tool.version = `incompatible (${compatibilityInfo.emulationType || 'unknown'})`;
         
-        // Try different version commands
-        const versionCommands = [
-          `"${toolPath}" --version`,
-          `"${toolPath}" -v`,
-          `"${toolPath}" -h | head -1`,
-          `"${toolPath}" 2>&1 | head -1`,
-        ];
-        
-        for (const cmd of versionCommands) {
-          try {
-            const { stdout, stderr } = await execAsync(`${cmd} 2>/dev/null || true`);
-            versionOutput = (stdout || stderr).trim();
-            if (versionOutput && !versionOutput.includes('error') && !versionOutput.includes('not found')) {
-              break;
+        // Add compatibility issues to environment for reporting
+        tool.environment.COMPATIBILITY_ISSUES = compatibilityInfo.issues.join('; ');
+        tool.environment.COMPATIBILITY_SUGGESTIONS = compatibilityInfo.suggestions.join('; ');
+      } else {
+        // Try to get version (many tools don't support --version, so we'll be flexible)
+        try {
+          let versionOutput = '';
+          
+          // Try different version commands
+          const versionCommands = [
+            `"${toolPath}" --version`,
+            `"${toolPath}" -v`,
+            `"${toolPath}" -h | head -1`,
+            `"${toolPath}" 2>&1 | head -1`,
+          ];
+          
+          for (const cmd of versionCommands) {
+            try {
+              const { stdout, stderr } = await execAsync(`${cmd} 2>/dev/null || true`);
+              versionOutput = (stdout || stderr).trim();
+              if (versionOutput && !versionOutput.includes('error') && !versionOutput.includes('not found')) {
+                break;
+              }
+            } catch {
+              // Try next command
             }
-          } catch {
-            // Try next command
           }
+          
+          // Extract version number if found
+          const versionMatch = versionOutput.match(/\b\d+\.\d+(\.\d+)?/);
+          tool.version = versionMatch ? versionMatch[0] : 'detected';
+        } catch {
+          tool.version = 'detected';
         }
-        
-        // Extract version number if found
-        const versionMatch = versionOutput.match(/\b\d+\.\d+(\.\d+)?/);
-        tool.version = versionMatch ? versionMatch[0] : 'detected';
-      } catch {
-        tool.version = 'detected';
+
+        // Add optimization flags
+        if (toolDef.binary.includes('tcc')) {
+          tool.flags.push(...getCompilerFlags(request));
+        }
+
+        // Add debug flags
+        if (request.debugMode && toolDef.binary.includes('tcc')) {
+          tool.flags.push('-g', '-DDEBUG');
+        }
+
+        // Set environment variables
+        tool.environment = {
+          [`PVSNESLIB_${toolDef.binary.toUpperCase().replace('-', '_')}`]: toolPath,
+        };
+
+        tool.status = 'configured';
       }
-
-      // Add optimization flags
-      if (toolDef.binary.includes('tcc')) {
-        tool.flags.push(...getCompilerFlags(request));
-      }
-
-      // Add debug flags
-      if (request.debugMode && toolDef.binary.includes('tcc')) {
-        tool.flags.push('-g', '-DDEBUG');
-      }
-
-      // Set environment variables
-      tool.environment = {
-        [`PVSNESLIB_${toolDef.binary.toUpperCase().replace('-', '_')}`]: toolPath,
-      };
-
-      tool.status = 'configured';
     } catch {
       tool.status = 'missing';
     }

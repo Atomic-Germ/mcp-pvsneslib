@@ -461,14 +461,10 @@ async function setupContinuousIntegration(
               uses: 'actions/checkout@v3',
             },
             {
-              name: 'Install PVSnesLib dependencies',
-              run: 'sudo apt-get update && sudo apt-get install -y build-essential',
-            },
-            {
-              name: 'Setup PVSnesLib',
+              name: 'Download and setup PVSnesLib',
               run: [
-                'wget https://github.com/alekmaul/pvsneslib/archive/refs/tags/4.3.0.tar.gz',
-                'tar -xzf 4.3.0.tar.gz',
+                'wget https://github.com/alekmaul/pvsneslib/releases/download/4.3.0/pvsneslib_430_64b_linux_release.zip',
+                'unzip pvsneslib_430_64b_linux_release.zip -d pvsneslib-4.3.0',
                 'export PVSNESLIB="$(pwd)/pvsneslib-4.3.0"',
               ].join('\n'),
             },
@@ -505,8 +501,8 @@ async function setupContinuousIntegration(
       '        run: sudo apt-get update && sudo apt-get install -y build-essential wget',
       '      - name: Download PVSnesLib',
       '        run: |',
-      '          wget https://github.com/alekmaul/pvsneslib/archive/refs/tags/4.3.0.tar.gz',
-      '          tar -xzf 4.3.0.tar.gz',
+      '          wget https://github.com/alekmaul/pvsneslib/releases/download/4.3.0/pvsneslib_430_64b_linux_release.zip',
+      '          unzip pvsneslib_430_64b_linux_release.zip -d pvsneslib-4.3.0',
       '      - name: Build SNES ROM',
       '        run: |',
       '          export PVSNESLIB="$(pwd)/pvsneslib-4.3.0"',

@@ -1,0 +1,20 @@
+#!/bin/bash
+# 816-TCC FEX Wrapper Script 
+# Fixes argument parsing issues under FEX emulation for PVSnesLib
+# Based on AI analysis from DeepSeek model
+
+# Store original TCC path
+ORIGINAL_TCC="/home/caseyjparker/.pvsneslib/pvsneslib-4.3.0/devkitsnes/bin/816-tcc"
+
+# Ensure proper argument array handling
+ARGS=()
+for arg in "$@"; do
+    ARGS+=("$arg")
+done
+
+# Set FEX configuration for better compatibility
+export FEX_ENABLE_SIGNALS_HANDLER=1
+export FEX_DISABLE_VIXL_INDIRECT_RUNTIME_CALLS=1
+
+# Execute the original TCC with properly handled arguments
+exec "$ORIGINAL_TCC" "${ARGS[@]}"
