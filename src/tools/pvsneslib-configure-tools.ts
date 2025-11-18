@@ -543,6 +543,7 @@ export const pvsnesLibConfigureToolsTool: ToolHandler = {
     {
       name: 'compilerFlags',
       type: 'array',
+      items: { type: 'string' },
       description: 'Additional compiler flags',
       required: false,
     },

@@ -28,6 +28,7 @@ export interface ToolParameter {
   description: string;
   required?: boolean;
   default?: any;
+  items?: { type: string };
 }
 
 export interface ToolResult {

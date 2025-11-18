@@ -66,10 +66,14 @@ export class MCPServer {
           type: 'object',
           properties: tool.parameters.reduce(
             (props, param) => {
-              props[param.name] = {
+              const propDef: any = {
                 type: param.type,
                 description: param.description,
               };
+              if (param.type === 'array' && param.items) {
+                propDef.items = param.items;
+              }
+              props[param.name] = propDef;
               return props;
             },
             {} as Record<string, any>
