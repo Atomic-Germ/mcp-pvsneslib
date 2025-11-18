@@ -6,6 +6,14 @@ import { soundEngineTool } from './sound-engine.js';
 import { graphicsConverterTool } from './graphics-converter.js';
 import { tilemapGeneratorTool } from './tilemap-generator.js';
 import { paletteManagerTool } from './palette-manager.js';
+// PVSnesLib Setup Tools
+import { pvsnesLibInitTool } from './pvsneslib-init.js';
+import { pvsnesLibValidateHostTool } from './pvsneslib-validate-host.js';
+import { pvsnesLibInstallSDKTool } from './pvsneslib-install-sdk.js';
+import { pvsnesLibValidateInstallTool } from './pvsneslib-validate-install.js';
+import { pvsnesLibConfigureToolsTool } from './pvsneslib-configure-tools.js';
+import { pvsnesLibBuildConfigTool } from './pvsneslib-build-config.js';
+import { pvsnesLibBootstrapTool } from './pvsneslib-bootstrap.js';
 
 // Convert TypedTool to ToolHandler for compatibility
 function typedToolToHandler(typedTool: TypedTool): ToolHandler {
@@ -34,6 +42,15 @@ export const defaultTools: ToolHandler[] = [
   typedToolToHandler(graphicsConverterTool),
   typedToolToHandler(tilemapGeneratorTool),
   typedToolToHandler(paletteManagerTool),
+
+  // PVSnesLib Setup Tools
+  pvsnesLibBootstrapTool,
+  pvsnesLibInitTool,
+  pvsnesLibValidateHostTool,
+  pvsnesLibInstallSDKTool,
+  pvsnesLibValidateInstallTool,
+  pvsnesLibConfigureToolsTool,
+  pvsnesLibBuildConfigTool,
 
   // Utility Tools
   fileReaderTool,
