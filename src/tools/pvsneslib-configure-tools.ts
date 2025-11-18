@@ -16,6 +16,13 @@ interface ConfigurationRequest {
   customConfig?: Record<string, string>;
 }
 
+interface ToolDefinition {
+  name: string;
+  binary: string;
+  baseFlags: string[];
+  location: 'bin' | 'tools';
+}
+
 interface ToolConfiguration {
   name: string;
   path: string;
@@ -91,78 +98,105 @@ async function configurePVSnesLibTools(request: ConfigurationRequest): Promise<C
 
 async function findPVSnesLibInstallation(): Promise<string> {
   // Check environment variable first
+  if (process.env.PVSNESLIB_HOME) {
+    return process.env.PVSNESLIB_HOME;
+  }
   if (process.env.PVSNESLIB) {
     return process.env.PVSNESLIB;
   }
 
   // Check common locations
   const searchPaths = [
+    join(process.env.HOME || '~', '.pvsneslib', 'pvsneslib-*'),
     './vendor/pvsneslib-*',
     '../vendor/pvsneslib-*',
     '../../vendor/pvsneslib-*',
   ];
 
-  for (const searchPath of searchPaths) {
+  for (const searchPattern of searchPaths) {
     try {
-      const { stdout } = await execAsync(`find . -maxdepth 4 -type d -name "pvsneslib-*" 2>/dev/null || true`);
-      const matches = stdout.trim().split('\n').filter(Boolean);
-      if (matches.length > 0) {
-        return resolve(matches[0]);
+      const { stdout } = await execAsync(`ls -d ${searchPattern} 2>/dev/null | head -1 || true`);
+      const match = stdout.trim();
+      if (match && await fs.access(match).then(() => true).catch(() => false)) {
+        return resolve(match);
       }
     } catch {
       // Continue searching
     }
   }
 
-  throw new Error('PVSnesLib installation not found. Please specify installPath or install PVSnesLib first.');
+  // If not found, throw an error with helpful installation suggestion
+  const suggestedPath = join(process.env.HOME || '~', '.pvsneslib', 'pvsneslib-4.3.0');
+  
+  throw new Error(`PVSnesLib installation not found. Please either:
+1. Install PVSnesLib using: mcp run pvsneslib_install_sdk --action install_sdk --version 4.3.0
+2. Download manually from GitHub releases and extract to: ${suggestedPath}
+3. Specify installPath parameter pointing to your PVSnesLib installation
+4. Set PVSNESLIB_HOME environment variable
+
+For automatic installation, you can run:
+  mcp run pvsneslib_bootstrap --action bootstrap --sdk-version 4.3.0`);
 }
 
 async function configureAllTools(
   installPath: string, 
   request: ConfigurationRequest
 ): Promise<ToolConfiguration[]> {
-  const toolDefinitions = [
+  const toolDefinitions: ToolDefinition[] = [
     {
       name: 'C Compiler (TCC)',
       binary: '816-tcc',
       baseFlags: ['-ml', '-ms'],
+      location: 'bin',
     },
     {
-      name: 'Assembler (TAS)',
-      binary: '816-tas', 
-      baseFlags: ['-b', '-l'],
+      name: 'WLA-65816 Assembler',
+      binary: 'wla-65816', 
+      baseFlags: ['-s', '-x'],
+      location: 'bin',
     },
     {
-      name: 'Linker (TLD)',
-      binary: '816-tld',
-      baseFlags: ['-b'],
+      name: 'WLA Linker',
+      binary: 'wlalink',
+      baseFlags: ['-d', '-s', '-v'],
+      location: 'bin',
     },
     {
-      name: 'Audio Converter (BRR)',
+      name: 'SPC700 Assembler',
+      binary: 'wla-spc700',
+      baseFlags: ['-s'],
+      location: 'bin',
+    },
+    {
+      name: 'Graphics Converter (GFX2SNES)',
+      binary: 'gfx2snes',
+      baseFlags: ['-p'],
+      location: 'tools',
+    },
+    {
+      name: 'Audio Converter (SNESBRR)',
       binary: 'snesbrr',
       baseFlags: ['-v'],
+      location: 'tools',
     },
     {
-      name: 'Graphics Converter',
-      binary: 'pcx2snes',
-      baseFlags: ['-m'],
-    },
-    {
-      name: 'Map Converter',
+      name: 'Map Converter (TMX2SNES)',
       binary: 'tmx2snes',
-      baseFlags: ['-m'],
+      baseFlags: ['-v'],
+      location: 'tools',
     },
     {
-      name: 'Font Converter',
-      binary: 'gfx2snes',
-      baseFlags: ['-f'],
+      name: 'Font Converter (PVSNESLIBFONT)',
+      binary: 'pvsneslibfont',
+      baseFlags: ['-c'],
+      location: 'tools',
     },
   ];
 
   const tools: ToolConfiguration[] = [];
   
   for (const toolDef of toolDefinitions) {
-    const toolPath = join(installPath, 'devkitsnes', 'bin', toolDef.binary);
+    const toolPath = join(installPath, 'devkitsnes', toolDef.location, toolDef.binary);
     const tool: ToolConfiguration = {
       name: toolDef.name,
       path: toolPath,
@@ -173,15 +207,37 @@ async function configureAllTools(
 
     try {
       // Check if tool exists
-      await fs.access(toolPath);
+      await fs.access(toolPath, fs.constants.F_OK);
       
-      // Try to get version
+      // Try to get version (many tools don't support --version, so we'll be flexible)
       try {
-        const { stdout } = await execAsync(`"${toolPath}" --version 2>/dev/null || "${toolPath}" -h 2>&1 | head -1`);
-        const versionMatch = stdout.match(/\b\d+\.\d+/);
-        tool.version = versionMatch ? versionMatch[0] : 'unknown';
+        let versionOutput = '';
+        
+        // Try different version commands
+        const versionCommands = [
+          `"${toolPath}" --version`,
+          `"${toolPath}" -v`,
+          `"${toolPath}" -h | head -1`,
+          `"${toolPath}" 2>&1 | head -1`,
+        ];
+        
+        for (const cmd of versionCommands) {
+          try {
+            const { stdout, stderr } = await execAsync(`${cmd} 2>/dev/null || true`);
+            versionOutput = (stdout || stderr).trim();
+            if (versionOutput && !versionOutput.includes('error') && !versionOutput.includes('not found')) {
+              break;
+            }
+          } catch {
+            // Try next command
+          }
+        }
+        
+        // Extract version number if found
+        const versionMatch = versionOutput.match(/\b\d+\.\d+(\.\d+)?/);
+        tool.version = versionMatch ? versionMatch[0] : 'detected';
       } catch {
-        tool.version = 'unknown';
+        tool.version = 'detected';
       }
 
       // Add optimization flags
@@ -244,6 +300,7 @@ async function updateEnvironmentConfig(
 ): Promise<string> {
   const envFile = join(projectPath, '.pvsneslib.env');
   const binPath = join(installPath, 'devkitsnes', 'bin');
+  const toolsPath = join(installPath, 'devkitsnes', 'tools');
   const libPath = join(installPath, 'lib');
   const includePath = join(installPath, 'include');
 
@@ -252,8 +309,10 @@ async function updateEnvironmentConfig(
     `# Generated on ${new Date().toISOString()}`,
     '',
     '# Core PVSnesLib paths',
+    `export PVSNESLIB_HOME="${installPath}"`,
     `PVSNESLIB="${installPath}"`,
     `PVSNESLIB_BIN="${binPath}"`,
+    `PVSNESLIB_TOOLS="${toolsPath}"`,
     `PVSNESLIB_LIB="${libPath}"`, 
     `PVSNESLIB_INCLUDE="${includePath}"`,
     '',
@@ -269,14 +328,14 @@ async function updateEnvironmentConfig(
 
   envLines.push('');
   envLines.push('# PATH extension');
-  envLines.push(`export PATH="$PVSNESLIB_BIN:$PATH"`);
+  envLines.push(`export PATH="$PVSNESLIB_BIN:$PVSNESLIB_TOOLS:$PATH"`);
 
   // Add custom configuration
   if (customConfig) {
     envLines.push('');
     envLines.push('# Custom configuration');
     for (const [key, value] of Object.entries(customConfig)) {
-      envLines.push(`${key}="${value}"`);
+      envLines.push(`export ${key}="${value}"`);
     }
   }
 
@@ -296,46 +355,49 @@ async function updateProjectMakefile(
   const makefilePath = join(projectPath, 'Makefile');
   
   try {
-    // Check if Makefile exists
-    let makefileContent = '';
-    try {
-      makefileContent = await fs.readFile(makefilePath, 'utf-8');
-    } catch {
-      // Create a basic Makefile
-      makefileContent = '# SNES Project Makefile\n';
-    }
-
-    // Add PVSnesLib configuration section
-    const pvsnesLibSection = [
+    // Create a proper PVSnesLib Makefile based on working examples
+    const projectName = basename(projectPath).toLowerCase().replace(/[^a-z0-9]/g, '');
+    
+    const makefileContent = [
+      `# ${basename(projectPath)} SNES Project`,
+      '# Generated by MCP-PVSnesLib configure_tools',
       '',
-      '# ============================================',
-      '# PVSnesLib Configuration',
-      '# ============================================',
-      `PVSNESLIB := ${installPath}`,
-      'include $(PVSNESLIB)/lib/build/Makefile.pvsneslib',
+      '# Check for PVSnesLib installation',
+      'ifeq ($(strip $(PVSNESLIB_HOME)),)',
+      '$(error "Please create an environment variable PVSNESLIB_HOME by following this guide: https://github.com/alekmaul/pvsneslib/wiki/Installation")',
+      'endif',
       '',
-      '# Compiler flags',
-      `CFLAGS += ${request.debugMode ? '-g -DDEBUG' : ''}`,
-      `CFLAGS += ${getCompilerFlags(request).join(' ')}`,
+      'include ${PVSNESLIB_HOME}/devkitsnes/snes_rules',
       '',
-      '# Include paths',
-      'CFLAGS += -I$(PVSNESLIB)/include',
+      '.PHONY: all clean',
       '',
-      '# Library paths',
-      'LDFLAGS += -L$(PVSNESLIB)/lib',
+      '#---------------------------------------------------------------------------------',
+      '# ROMNAME is used in snes_rules file',
+      `export ROMNAME := ${projectName}`,
+      '',
+      '# Additional compiler flags',
+      ...(request.debugMode ? ['export PVSNESLIB_DEBUG := 1'] : []),
+      ...(request.compilerFlags && request.compilerFlags.length > 0 ? 
+          [`# Custom flags: ${request.compilerFlags.join(' ')}`] : []),
+      '',
+      'all: $(ROMNAME).sfc',
+      '',
+      'clean: cleanBuildRes cleanRom cleanGfx',
+      '',
+      '# Add your custom targets here',
+      '# Example:',
+      '# graphics: sprite.pic background.pic',
+      '# \\t@echo "Graphics converted"',
+      '',
+      '# sprite.pic: graphics/sprite.png',
+      '# \\t$(GFXCONV) -s 8 -o 16 -u 16 -p -e 0 -i $<',
       '',
     ].join('\n');
 
-    // Check if PVSnesLib section already exists
-    if (!makefileContent.includes('PVSnesLib Configuration')) {
-      makefileContent += pvsnesLibSection;
-      await fs.writeFile(makefilePath, makefileContent);
-      return true;
-    }
-
-    return false; // Already configured
+    await fs.writeFile(makefilePath, makefileContent);
+    return true;
   } catch (error) {
-    console.warn(`Could not update Makefile: ${error}`);
+    console.warn('Failed to update Makefile:', error);
     return false;
   }
 }
