@@ -520,7 +520,7 @@ function formatConfigurationResult(result: ConfigurationResult): string {
 }
 
 export const pvsnesLibConfigureToolsTool = createTypedTool({
-  name: 'pvsneslib_configure_tools',
+  name: 'configure_tools',
   description: 'Configure PVSnesLib toolchain and development environment',
   inputSchema: Type.Object({
     action: Type.Literal('configure_tools', {

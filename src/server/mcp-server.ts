@@ -59,30 +59,42 @@ export class MCPServer {
   private setupHandlers(): void {
     // Handle tool listing
     this.server.setRequestHandler(ListToolsRequestSchema, async () => {
-      const tools = Array.from(this.tools.values()).map(tool => ({
-        name: tool.name,
-        description: tool.description,
-        inputSchema: {
-          type: 'object',
-          properties: tool.parameters.reduce(
-            (props, param) => {
-              const propDef: any = {
-                type: param.type,
-                description: param.description,
-              };
-              if (param.type === 'array' && param.items) {
-                propDef.items = param.items;
-              }
-              props[param.name] = propDef;
-              return props;
-            },
-            {} as Record<string, any>
-          ),
-          required: tool.parameters
-            .filter(param => param.required)
-            .map(param => param.name),
-        },
-      }));
+      const tools = Array.from(this.tools.values()).map(tool => {
+        // Debug logging for configure_tools specifically
+        if (tool.name === 'pvsneslib_configure_tools') {
+          this.logger.debug(`Debug ${tool.name}:`, {
+            name: tool.name,
+            parametersCount: tool.parameters.length,
+            parametersTypes: tool.parameters.map(p => `${p.name}:${p.type}`),
+            hasCompilerFlags: tool.parameters.some(p => p.name === 'compilerFlags'),
+          });
+        }
+        
+        return {
+          name: tool.name,
+          description: tool.description,
+          inputSchema: {
+            type: 'object',
+            properties: tool.parameters.reduce(
+              (props, param) => {
+                const propDef: any = {
+                  type: param.type,
+                  description: param.description,
+                };
+                if (param.type === 'array' && param.items) {
+                  propDef.items = param.items;
+                }
+                props[param.name] = propDef;
+                return props;
+              },
+              {} as Record<string, any>
+            ),
+            required: tool.parameters
+              .filter(param => param.required)
+              .map(param => param.name),
+          },
+        };
+      });
 
       this.logger.debug(`Listing ${tools.length} tools`);
       return { tools };
