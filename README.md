@@ -1,6 +1,6 @@
 # MCP-PVSnesLib
 
-[![CI/CD Pipeline](https://github.com/Atomic-Germ/mcp-pvsneslib/actions/workflows/ci.yml/badge.svg)](https://github.com/Atomic-Germ/mcp-pvsneslib/actions/workflows/ci.yml)
+[![CI/CD Pipeline](https://github.com/Atomic-Germ/mcp-pvsneslib/actions/workflows/ci.yml/badge.svg?event=push)](https://github.com/Atomic-Germ/mcp-pvsneslib/actions/workflows/ci.yml)
 [![npm version](https://badge.fury.io/js/mcp-pvsneslib.svg)](https://www.npmjs.com/package/mcp-pvsneslib)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
