@@ -25,7 +25,7 @@ export const tilemapGeneratorTool = createTypedTool({
         Type.Literal('create_minimap'),
       ],
       {
-        description: 'Tilemap generation action',
+        description: 'Tilemap action. Use "create_tilemap" for basic level creation, "generate_collision" for collision detection, "convert_tiled_map" to import from Tiled Map Editor.',
       }
     ),
     mapWidth: Type.Optional(

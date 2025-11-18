@@ -24,7 +24,7 @@ export const soundEngineTool = createTypedTool({
         Type.Literal('analyze_audio_memory'),
       ],
       {
-        description: 'Audio action to perform',
+        description: 'Audio action. Use "create_sound_engine" for basic setup, "convert_wav_to_brr" for SPC-700 audio conversion, "create_music_template" for music system setup.',
       }
     ),
     filePath: Type.Optional(
@@ -41,7 +41,7 @@ export const soundEngineTool = createTypedTool({
           Type.Literal('NSF'),
         ],
         {
-          description: 'Audio format for conversion',
+          description: 'Audio format. Use "BRR" for SNES samples, "SPC" for music files, "IT" for tracker modules.',
         }
       )
     ),
@@ -61,7 +61,7 @@ export const soundEngineTool = createTypedTool({
     ),
     channels: Type.Optional(
       Type.Union([Type.Literal(1), Type.Literal(2)], {
-        description: 'Number of audio channels (mono/stereo)',
+        description: 'Number of audio channels: 1 for mono, 2 for stereo',
       })
     ),
     engineType: Type.Optional(
@@ -72,7 +72,7 @@ export const soundEngineTool = createTypedTool({
           Type.Literal('simple'),
         ],
         {
-          description: 'Sound engine type',
+          description: 'Sound engine type: "simple" for basic SFX, "sequencer" for music, "tracker" for advanced audio',
         }
       )
     ),

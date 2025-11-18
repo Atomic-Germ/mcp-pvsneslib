@@ -25,7 +25,7 @@ export const graphicsConverterTool = createTypedTool({
         Type.Literal('batch_convert'),
       ],
       {
-        description: 'Graphics conversion action',
+        description: 'Graphics conversion action. Use "convert_png_to_tiles" for basic image conversion, "create_palette" for color optimization, "generate_background" for creating SNES background layers.',
       }
     ),
     filePath: Type.Optional(
@@ -42,7 +42,7 @@ export const graphicsConverterTool = createTypedTool({
       Type.Union(
         [Type.Literal('8x8'), Type.Literal('16x16'), Type.Literal('32x32')],
         {
-          description: 'Tile size for conversion',
+          description: 'Tile size: "8x8" for backgrounds, "16x16" for sprites, "32x32" for large sprites',
         }
       )
     ),
@@ -55,7 +55,7 @@ export const graphicsConverterTool = createTypedTool({
           Type.Literal('mode7'),
         ],
         {
-          description: 'SNES color mode',
+          description: 'SNES color depth: "2bpp" (4 colors), "4bpp" (16 colors, most common), "8bpp" (256 colors), "mode7" (256 colors with rotation)',
         }
       )
     ),
@@ -68,7 +68,7 @@ export const graphicsConverterTool = createTypedTool({
           Type.Literal('custom'),
         ],
         {
-          description: 'Compression method for graphics data',
+          description: 'Compression: "none" for uncompressed (fastest), "rle" for simple compression, "lz4" for better compression',
         }
       )
     ),
