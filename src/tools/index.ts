@@ -20,7 +20,7 @@ function typedToolToHandler(typedTool: TypedTool): ToolHandler {
   return {
     name: typedTool.name,
     description: typedTool.description,
-    parameters: [], // TypedTool uses JSON schema, not this format
+    parameters: [], // TypedTool uses JSON schema, handled by MCP server directly
     execute: async (params: any) => {
       const result = await typedTool.execute(params);
       return {
@@ -36,24 +36,36 @@ function typedToolToHandler(typedTool: TypedTool): ToolHandler {
  * Registry of all available tools for SNES development
  */
 export const defaultTools: ToolHandler[] = [
-  // SNES Development Tools
+  // SNES Development Tools (TypedTools converted to ToolHandlers)
   typedToolToHandler(spriteManagerTool),
   typedToolToHandler(soundEngineTool),
   typedToolToHandler(graphicsConverterTool),
   typedToolToHandler(tilemapGeneratorTool),
   typedToolToHandler(paletteManagerTool),
+  typedToolToHandler(pvsnesLibConfigureToolsTool),
 
-  // PVSnesLib Setup Tools
+  // PVSnesLib Setup Tools (native ToolHandlers)
   pvsnesLibBootstrapTool,
   pvsnesLibInitTool,
   pvsnesLibValidateHostTool,
   pvsnesLibInstallSDKTool,
   pvsnesLibValidateInstallTool,
-  pvsnesLibConfigureToolsTool,
   pvsnesLibBuildConfigTool,
 
   // Utility Tools
   fileReaderTool,
+];
+
+/**
+ * Registry of TypedTools for direct access to schemas
+ */
+export const typedTools = [
+  spriteManagerTool,
+  soundEngineTool,
+  graphicsConverterTool,
+  tilemapGeneratorTool,
+  paletteManagerTool,
+  pvsnesLibConfigureToolsTool,
 ];
 
 /**

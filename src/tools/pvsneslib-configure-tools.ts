@@ -2,7 +2,8 @@ import { promises as fs } from 'fs';
 import { join, resolve, basename } from 'path';
 import { exec } from 'child_process';
 import { promisify } from 'util';
-import type { ToolHandler } from '../types/index.js';
+import { Type } from '@sinclair/typebox';
+import { createTypedTool } from './typed-tool-system.js';
 
 const execAsync = promisify(exec);
 
@@ -518,55 +519,52 @@ function formatConfigurationResult(result: ConfigurationResult): string {
   return lines.join('\n');
 }
 
-export const pvsnesLibConfigureToolsTool: ToolHandler = {
+export const pvsnesLibConfigureToolsTool = createTypedTool({
   name: 'pvsneslib_configure_tools',
   description: 'Configure PVSnesLib toolchain and development environment',
-  parameters: [
-    {
-      name: 'action',
-      type: 'string',
+  inputSchema: Type.Object({
+    action: Type.Literal('configure_tools', {
       description: 'The action to perform (must be "configure_tools")',
-      required: true,
-    },
-    {
-      name: 'installPath',
-      type: 'string',
+    }),
+    installPath: Type.Optional(Type.String({
       description: 'Path to PVSnesLib installation (auto-detected if not provided)',
-      required: false,
-    },
-    {
-      name: 'projectPath',
-      type: 'string',
+    })),
+    projectPath: Type.Optional(Type.String({
       description: 'Project directory path (default: current directory)',
-      required: false,
-    },
-    {
-      name: 'compilerFlags',
-      type: 'array',
-      items: { type: 'string' },
+    })),
+    compilerFlags: Type.Optional(Type.Array(Type.String(), {
       description: 'Additional compiler flags',
-      required: false,
-    },
-    {
-      name: 'optimizationLevel',
-      type: 'string',
+    })),
+    optimizationLevel: Type.Optional(Type.Union([
+      Type.Literal('none'),
+      Type.Literal('basic'),
+      Type.Literal('aggressive')
+    ], {
       description: 'Optimization level: none, basic, or aggressive (default: basic)',
-      required: false,
-    },
-    {
-      name: 'debugMode',
-      type: 'boolean',
+    })),
+    debugMode: Type.Optional(Type.Boolean({
       description: 'Enable debug mode with debug symbols and flags',
-      required: false,
-    },
-    {
-      name: 'customConfig',
-      type: 'object',
+    })),
+    customConfig: Type.Optional(Type.Record(Type.String(), Type.String(), {
       description: 'Custom environment variables to add',
-      required: false,
-    },
-  ],
-  execute: async (params: any) => {
+    })),
+  }),
+  outputSchema: Type.Object({
+    success: Type.Boolean(),
+    content: Type.Optional(Type.String()),
+    error: Type.Optional(Type.String()),
+    metadata: Type.Optional(Type.Object({
+      installPath: Type.String(),
+      projectPath: Type.String(),
+      toolsConfigured: Type.Number(),
+      toolsTotal: Type.Number(),
+      environmentFile: Type.String(),
+      makefileUpdated: Type.Boolean(),
+      pathUpdated: Type.Boolean(),
+      timestamp: Type.String(),
+    })),
+  }),
+  handler: async (params) => {
     try {
       if (params.action !== 'configure_tools') {
         throw new Error('Invalid action. Must be "configure_tools"');
@@ -605,4 +603,4 @@ export const pvsnesLibConfigureToolsTool: ToolHandler = {
       };
     }
   },
-};
+});
