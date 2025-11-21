@@ -36,10 +36,12 @@ interface ValidationResult {
   summary: string;
 }
 
-async function validatePVSnesLibInstallation(request: ValidationRequest): Promise<ValidationResult> {
+async function validatePVSnesLibInstallation(
+  request: ValidationRequest
+): Promise<ValidationResult> {
   // Determine installation path
-  const installPath = request.installPath 
-    ? resolve(request.installPath) 
+  const installPath = request.installPath
+    ? resolve(request.installPath)
     : await findInstallationPath();
 
   // Get version from config or installation
@@ -50,14 +52,14 @@ async function validatePVSnesLibInstallation(request: ValidationRequest): Promis
 
   // Validate core components
   const components = await validateCoreComponents(installPath, request.verbose);
-  
+
   // Validate tools (if requested)
-  const tools = request.validateTools 
+  const tools = request.validateTools
     ? await validateDevelopmentTools(installPath, request.verbose)
     : [];
-    
+
   // Validate examples (if requested)
-  const examples = request.checkExamples 
+  const examples = request.checkExamples
     ? await validateExampleProjects(installPath, request.verbose)
     : [];
 
@@ -68,14 +70,28 @@ async function validatePVSnesLibInstallation(request: ValidationRequest): Promis
     ...tools.filter(t => t.found),
     ...examples.filter(e => e.found),
   ].length;
-  
-  const completeness = totalComponents > 0 ? Math.round((foundComponents / totalComponents) * 100) : 0;
+
+  const completeness =
+    totalComponents > 0
+      ? Math.round((foundComponents / totalComponents) * 100)
+      : 0;
 
   // Generate issues and recommendations
-  generateValidationInsights(components, tools, examples, issues, recommendations);
+  generateValidationInsights(
+    components,
+    tools,
+    examples,
+    issues,
+    recommendations
+  );
 
   const success = completeness >= 80 && issues.length === 0;
-  const summary = generateValidationSummary(success, completeness, installPath, version);
+  const summary = generateValidationSummary(
+    success,
+    completeness,
+    installPath,
+    version
+  );
 
   return {
     success,
@@ -102,7 +118,9 @@ async function findInstallationPath(): Promise<string> {
   for (const pathPattern of possiblePaths) {
     if (pathPattern.includes('*')) {
       try {
-        const { stdout } = await execAsync(`find . -maxdepth 3 -type d -name "${pathPattern.split('/').pop()}" 2>/dev/null || true`);
+        const { stdout } = await execAsync(
+          `find . -maxdepth 3 -type d -name "${pathPattern.split('/').pop()}" 2>/dev/null || true`
+        );
         const dirs = stdout.trim().split('\n').filter(Boolean);
         if (dirs.length > 0) {
           return resolve(dirs[0]);
@@ -122,7 +140,9 @@ async function findInstallationPath(): Promise<string> {
     }
   }
 
-  throw new Error('PVSnesLib installation not found. Please specify installPath or ensure it\'s installed in ./vendor/');
+  throw new Error(
+    "PVSnesLib installation not found. Please specify installPath or ensure it's installed in ./vendor/"
+  );
 }
 
 async function getInstalledVersion(installPath: string): Promise<string> {
@@ -143,7 +163,9 @@ async function getInstalledVersion(installPath: string): Promise<string> {
   for (const versionPath of versionFilePaths) {
     try {
       const content = await fs.readFile(versionPath, 'utf-8');
-      const versionMatch = content.match(/(?:VERSION|version)[:\s]+([0-9]+\.[0-9]+\.[0-9]+)/i);
+      const versionMatch = content.match(
+        /(?:VERSION|version)[:\s]+([0-9]+\.[0-9]+\.[0-9]+)/i
+      );
       if (versionMatch) {
         return versionMatch[1];
       }
@@ -156,7 +178,7 @@ async function getInstalledVersion(installPath: string): Promise<string> {
 }
 
 async function validateCoreComponents(
-  installPath: string, 
+  installPath: string,
   verbose: boolean
 ): Promise<ComponentValidation[]> {
   const coreComponents = [
@@ -191,7 +213,7 @@ async function validateDevelopmentTools(
   ];
 
   const validations = await validateComponents(installPath, tools, verbose);
-  
+
   // Check if tools are executable (Unix-like systems)
   for (const validation of validations) {
     if (validation.found) {
@@ -242,7 +264,7 @@ async function validateComponents(
     try {
       const stats = await fs.stat(fullPath);
       validation.found = true;
-      
+
       if (verbose) {
         validation.size = stats.size;
         validation.lastModified = stats.mtime.toISOString();
@@ -265,36 +287,51 @@ function generateValidationInsights(
   recommendations: string[]
 ): void {
   // Check for critical missing components
-  const missingCritical = components.filter(c => 
-    !c.found && (c.name.includes('Header') || c.name.includes('Build System'))
+  const missingCritical = components.filter(
+    c =>
+      !c.found && (c.name.includes('Header') || c.name.includes('Build System'))
   );
-  
+
   if (missingCritical.length > 0) {
-    issues.push(`Missing critical components: ${missingCritical.map(c => c.name).join(', ')}`);
+    issues.push(
+      `Missing critical components: ${missingCritical.map(c => c.name).join(', ')}`
+    );
   }
 
   // Check for missing tools
   const missingTools = tools.filter(t => !t.found);
   if (missingTools.length > 0) {
-    issues.push(`Missing development tools: ${missingTools.map(t => t.name).join(', ')}`);
+    issues.push(
+      `Missing development tools: ${missingTools.map(t => t.name).join(', ')}`
+    );
   }
 
   // Check for non-executable tools
-  const nonExecutableTools = tools.filter(t => t.found && t.executable === false);
+  const nonExecutableTools = tools.filter(
+    t => t.found && t.executable === false
+  );
   if (nonExecutableTools.length > 0) {
-    issues.push(`Non-executable tools detected: ${nonExecutableTools.map(t => t.name).join(', ')}`);
-    recommendations.push('Run: chmod +x devkitsnes/bin/* to make tools executable');
+    issues.push(
+      `Non-executable tools detected: ${nonExecutableTools.map(t => t.name).join(', ')}`
+    );
+    recommendations.push(
+      'Run: chmod +x devkitsnes/bin/* to make tools executable'
+    );
   }
 
   // Recommendations based on missing examples
   const missingExamples = examples.filter(e => !e.found);
   if (missingExamples.length > 0) {
-    recommendations.push('Consider installing example projects for learning and reference');
+    recommendations.push(
+      'Consider installing example projects for learning and reference'
+    );
   }
 
   // General recommendations
   if (components.some(c => !c.found) || tools.some(t => !t.found)) {
-    recommendations.push('Run: pvsneslib_install_sdk --force-reinstall to repair installation');
+    recommendations.push(
+      'Run: pvsneslib_install_sdk --force-reinstall to repair installation'
+    );
   }
 }
 
@@ -306,20 +343,20 @@ function generateValidationSummary(
 ): string {
   const status = success ? '✅ VALID' : '❌ INVALID';
   const emoji = completeness >= 90 ? '🎮' : completeness >= 70 ? '⚠️' : '💥';
-  
+
   return `${emoji} PVSnesLib Installation ${status} - ${completeness}% Complete (v${version}) at ${installPath}`;
 }
 
 function formatValidationResult(result: ValidationResult): string {
   const lines: string[] = [];
-  
+
   lines.push('🔍 PVSnesLib Installation Validation Report');
-  lines.push('=' .repeat(55));
+  lines.push('='.repeat(55));
   lines.push('');
-  
+
   lines.push(`${result.summary}`);
   lines.push('');
-  
+
   lines.push(`📁 Installation Path: ${result.installPath}`);
   lines.push(`📊 Completeness: ${result.completeness}%`);
   lines.push(`🔢 Version: ${result.version}`);
@@ -379,7 +416,9 @@ function formatValidationResult(result: ValidationResult): string {
   if (result.success) {
     lines.push('🚀 Installation is ready for SNES development! 🎮✨');
   } else {
-    lines.push('🔧 Please address the issues above before proceeding with development.');
+    lines.push(
+      '🔧 Please address the issues above before proceeding with development.'
+    );
   }
 
   return lines.join('\n');
@@ -398,7 +437,8 @@ export const pvsnesLibValidateInstallTool: ToolHandler = {
     {
       name: 'installPath',
       type: 'string',
-      description: 'Path to PVSnesLib installation (auto-detected if not provided)',
+      description:
+        'Path to PVSnesLib installation (auto-detected if not provided)',
       required: false,
     },
     {

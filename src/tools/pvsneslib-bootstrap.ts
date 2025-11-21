@@ -63,7 +63,11 @@ const BOOTSTRAP_STEPS: Omit<BootstrapStep, 'completed' | 'errorMessage'>[] = [
     name: 'validate_install',
     description: 'Verify installation integrity',
     toolName: 'pvsneslib_validate_install',
-    params: { action: 'validate_install', validateTools: true, checkExamples: false },
+    params: {
+      action: 'validate_install',
+      validateTools: true,
+      checkExamples: false,
+    },
     required: true,
   },
   {
@@ -77,7 +81,7 @@ const BOOTSTRAP_STEPS: Omit<BootstrapStep, 'completed' | 'errorMessage'>[] = [
     name: 'build_config',
     description: 'Setup build system integration',
     toolName: 'pvsneslib_build_config',
-    params: { 
+    params: {
       action: 'build_config',
       generateScripts: true,
       setupVSCode: true,
@@ -94,17 +98,19 @@ const BOOTSTRAP_STEPS: Omit<BootstrapStep, 'completed' | 'errorMessage'>[] = [
   },
 ];
 
-async function bootstrapPVSnesLib(request: BootstrapRequest): Promise<BootstrapResult> {
+async function bootstrapPVSnesLib(
+  request: BootstrapRequest
+): Promise<BootstrapResult> {
   const startTime = Date.now();
   const projectName = request.projectName || 'my-snes-game';
-  const installPrefix = request.installPrefix 
+  const installPrefix = request.installPrefix
     ? resolve(request.installPrefix)
     : join(process.env.HOME || process.cwd(), '.pvsneslib');
 
   // Initialize state tracking
   const stateFile = join(installPrefix, '.bootstrap-state.json');
   const previousState = await loadPreviousState(stateFile);
-  
+
   if (request.resumeFromFailure && previousState) {
     console.log('🔄 Resuming from previous bootstrap attempt...');
   } else if (!request.forceReinstall) {
@@ -112,8 +118,8 @@ async function bootstrapPVSnesLib(request: BootstrapRequest): Promise<BootstrapR
     const existingState = await checkExistingSetup(installPrefix);
     if (existingState.isComplete) {
       return generateCompletionResult(
-        projectName, 
-        installPrefix, 
+        projectName,
+        installPrefix,
         existingState.environmentFile,
         Date.now() - startTime
       );
@@ -153,14 +159,17 @@ async function bootstrapPVSnesLib(request: BootstrapRequest): Promise<BootstrapR
         if (result.success) {
           step.completed = true;
           completedSteps++;
-          
+
           // Store environment file path from configure_tools step
-          if (step.name === 'configure_tools' && result.metadata?.environmentFile) {
+          if (
+            step.name === 'configure_tools' &&
+            result.metadata?.environmentFile
+          ) {
             environmentFile = result.metadata.environmentFile;
           }
-          
+
           console.log(`✅ ${step.description} completed`);
-          
+
           // Save progress
           await saveBootstrapState(stateFile, {
             completedSteps: steps.filter(s => s.completed).map(s => s.name),
@@ -169,11 +178,10 @@ async function bootstrapPVSnesLib(request: BootstrapRequest): Promise<BootstrapR
             projectName,
             timestamp: new Date().toISOString(),
           });
-          
         } else {
           step.errorMessage = result.error || 'Unknown error occurred';
           console.error(`❌ ${step.description} failed: ${step.errorMessage}`);
-          
+
           if (step.required) {
             throw new Error(`Required step failed: ${step.name}`);
           } else {
@@ -181,9 +189,10 @@ async function bootstrapPVSnesLib(request: BootstrapRequest): Promise<BootstrapR
           }
         }
       } catch (error) {
-        step.errorMessage = error instanceof Error ? error.message : String(error);
+        step.errorMessage =
+          error instanceof Error ? error.message : String(error);
         console.error(`💥 Error in ${step.description}: ${step.errorMessage}`);
-        
+
         if (step.required) {
           throw error;
         }
@@ -191,12 +200,12 @@ async function bootstrapPVSnesLib(request: BootstrapRequest): Promise<BootstrapR
     }
 
     // Generate final result
-    const projectPath = request.createStarterProject 
+    const projectPath = request.createStarterProject
       ? join(process.cwd(), projectName)
       : undefined;
-      
+
     const timeElapsed = Date.now() - startTime;
-    
+
     const result: BootstrapResult = {
       success: completedSteps >= steps.filter(s => s.required).length,
       projectName,
@@ -217,11 +226,10 @@ async function bootstrapPVSnesLib(request: BootstrapRequest): Promise<BootstrapR
     }
 
     return result;
-    
   } catch (error) {
     // Generate failure result
     const timeElapsed = Date.now() - startTime;
-    
+
     return {
       success: false,
       projectName,
@@ -246,37 +254,53 @@ async function loadPreviousState(stateFile: string): Promise<any> {
   }
 }
 
-async function saveBootstrapState(stateFile: string, state: any): Promise<void> {
+async function saveBootstrapState(
+  stateFile: string,
+  state: any
+): Promise<void> {
   try {
-    await fs.mkdir(stateFile.split('/').slice(0, -1).join('/'), { recursive: true });
+    await fs.mkdir(stateFile.split('/').slice(0, -1).join('/'), {
+      recursive: true,
+    });
     await fs.writeFile(stateFile, JSON.stringify(state, null, 2));
   } catch (error) {
     console.warn(`Could not save bootstrap state: ${error}`);
   }
 }
 
-async function checkExistingSetup(installPrefix: string): Promise<{ isComplete: boolean; environmentFile: string }> {
+async function checkExistingSetup(
+  installPrefix: string
+): Promise<{ isComplete: boolean; environmentFile: string }> {
   try {
     // Check if PVSnesLib is already installed and configured
     const envFile = join(installPrefix, '..', '.pvsneslib.env');
     const pvsnesLibDir = join(installPrefix, 'devkitsnes');
-    
+
     const [envExists, dirExists] = await Promise.all([
-      fs.access(envFile).then(() => true).catch(() => false),
-      fs.access(pvsnesLibDir).then(() => true).catch(() => false),
+      fs
+        .access(envFile)
+        .then(() => true)
+        .catch(() => false),
+      fs
+        .access(pvsnesLibDir)
+        .then(() => true)
+        .catch(() => false),
     ]);
-    
+
     if (envExists && dirExists) {
       return { isComplete: true, environmentFile: envFile };
     }
   } catch {
     // Continue with bootstrap
   }
-  
+
   return { isComplete: false, environmentFile: '' };
 }
 
-function customizeStepsForRequest(steps: BootstrapStep[], request: BootstrapRequest): void {
+function customizeStepsForRequest(
+  steps: BootstrapStep[],
+  request: BootstrapRequest
+): void {
   // Customize SDK installation step
   const installStep = steps.find(s => s.name === 'install_sdk');
   if (installStep) {
@@ -298,7 +322,7 @@ function customizeStepsForRequest(steps: BootstrapStep[], request: BootstrapRequ
       setupVSCode: !request.skipVSCode,
       setupContinuousIntegration: !request.skipCI,
     };
-    
+
     if (request.skipVSCode && request.skipCI) {
       buildStep.required = false;
     }
@@ -314,7 +338,7 @@ function customizeStepsForRequest(steps: BootstrapStep[], request: BootstrapRequ
       generateMakefile: true,
       generateMain: true,
     };
-    
+
     if (!request.createStarterProject) {
       initStep.required = false;
     }
@@ -322,21 +346,25 @@ function customizeStepsForRequest(steps: BootstrapStep[], request: BootstrapRequ
 }
 
 async function executeBootstrapStep(
-  step: BootstrapStep, 
-  context: { installPrefix: string; projectName: string; request: BootstrapRequest }
+  step: BootstrapStep,
+  context: {
+    installPrefix: string;
+    projectName: string;
+    request: BootstrapRequest;
+  }
 ): Promise<{ success: boolean; error?: string; metadata?: any }> {
   try {
     // Import and execute the actual tool
     // This is a simplified version - in practice, you'd dynamically import the tool
-    
+
     // For now, we'll simulate the tool execution
     // In a real implementation, you'd call the actual tool functions
-    
+
     console.log(`Executing ${step.toolName} with params:`, step.params);
-    
+
     // Simulate processing time
     await new Promise(resolve => setTimeout(resolve, 1000));
-    
+
     // Simulate success (in practice, call the real tool)
     return {
       success: true,
@@ -349,7 +377,6 @@ async function executeBootstrapStep(
         }),
       },
     };
-    
   } catch (error) {
     return {
       success: false,
@@ -411,13 +438,13 @@ function generateNextSteps(
       '',
       '4. Test your ROM:',
       '   ./test.sh',
-      '',
+      ''
     );
   } else {
     steps.push(
       '3. Create a new SNES project:',
       '   pvsneslib_init --project-name my-awesome-game',
-      '',
+      ''
     );
   }
 
@@ -428,14 +455,14 @@ function generateNextSteps(
     '  • PVSnesLib Documentation: https://github.com/alekmaul/pvsneslib',
     '  • SNES Development Guide: https://wiki.superfamicom.org/',
     '  • Examples and Tutorials: Check your installed examples/',
-    '',
+    ''
   );
 
   return steps;
 }
 
 function generateTroubleshootingSteps(
-  steps: BootstrapStep[], 
+  steps: BootstrapStep[],
   finalError: unknown
 ): string[] {
   const troubleshooting: string[] = [
@@ -476,7 +503,7 @@ function generateTroubleshootingSteps(
     '   • Check PVSnesLib GitHub issues',
     '   • Verify system compatibility',
     '   • Try manual installation steps',
-    '',
+    ''
   );
 
   return troubleshooting;
@@ -484,17 +511,19 @@ function generateTroubleshootingSteps(
 
 function formatBootstrapResult(result: BootstrapResult): string {
   const lines: string[] = [];
-  
+
   lines.push('🚀 PVSnesLib Bootstrap Report');
-  lines.push('=' .repeat(50));
+  lines.push('='.repeat(50));
   lines.push('');
-  
+
   const status = result.success ? '✅ SUCCESS' : '❌ FAILED';
   const duration = (result.timeElapsed / 1000).toFixed(1);
-  
+
   lines.push(`Status: ${status}`);
   lines.push(`Duration: ${duration} seconds`);
-  lines.push(`Progress: ${result.completedSteps}/${result.totalSteps} steps completed`);
+  lines.push(
+    `Progress: ${result.completedSteps}/${result.totalSteps} steps completed`
+  );
   lines.push(`Project: ${result.projectName}`);
   lines.push(`Install Path: ${result.installPath}`);
   if (result.projectPath) {
@@ -592,13 +621,15 @@ export const pvsnesLibBootstrapTool: ToolHandler = {
     {
       name: 'forceReinstall',
       type: 'boolean',
-      description: 'Force reinstallation even if already installed (default: false)',
+      description:
+        'Force reinstallation even if already installed (default: false)',
       required: false,
     },
     {
       name: 'resumeFromFailure',
       type: 'boolean',
-      description: 'Resume from previous failed bootstrap attempt (default: false)',
+      description:
+        'Resume from previous failed bootstrap attempt (default: false)',
       required: false,
     },
   ],
@@ -624,7 +655,9 @@ export const pvsnesLibBootstrapTool: ToolHandler = {
 
       // Validate offline mode requirements
       if (request.offlineMode && !request.offlineSDKPath) {
-        throw new Error('offlineSDKPath is required when offlineMode is enabled');
+        throw new Error(
+          'offlineSDKPath is required when offlineMode is enabled'
+        );
       }
 
       const result = await bootstrapPVSnesLib(request);

@@ -24,25 +24,30 @@ interface InstallationResult {
   nextSteps: string[];
 }
 
-async function installPVSnesLibSDK(options: InstallationOptions): Promise<InstallationResult> {
+async function installPVSnesLibSDK(
+  options: InstallationOptions
+): Promise<InstallationResult> {
   const { version, installPath, offline, archiveUrl, forceReinstall } = options;
-  
+
   const fullInstallPath = resolve(installPath, `pvsneslib-${version}`);
   const vendorPath = resolve(installPath, '..');
-  
+
   // Create vendor directory if it doesn't exist
   await fs.mkdir(vendorPath, { recursive: true });
 
   // Check if already installed
-  if (!forceReinstall && await checkExistingInstallation(fullInstallPath)) {
-    const existingResult = await validateExistingInstallation(fullInstallPath, version);
+  if (!forceReinstall && (await checkExistingInstallation(fullInstallPath))) {
+    const existingResult = await validateExistingInstallation(
+      fullInstallPath,
+      version
+    );
     if (existingResult.success) {
       return existingResult;
     }
   }
 
   let downloadPath: string;
-  
+
   if (offline && archiveUrl) {
     // Use provided local archive
     downloadPath = archiveUrl;
@@ -56,10 +61,10 @@ async function installPVSnesLibSDK(options: InstallationOptions): Promise<Instal
 
   // Validate installation
   const components = await validateInstallation(fullInstallPath);
-  
+
   // Update project configuration
   const configPath = await updateProjectConfig(fullInstallPath, version);
-  
+
   // Calculate installation size
   const size = await calculateInstallationSize(fullInstallPath);
 
@@ -78,7 +83,9 @@ async function installPVSnesLibSDK(options: InstallationOptions): Promise<Instal
   };
 }
 
-async function checkExistingInstallation(installPath: string): Promise<boolean> {
+async function checkExistingInstallation(
+  installPath: string
+): Promise<boolean> {
   try {
     const stat = await fs.stat(installPath);
     return stat.isDirectory();
@@ -100,7 +107,7 @@ async function validateExistingInstallation(
     ];
 
     const components: string[] = [];
-    
+
     for (const file of requiredFiles) {
       const filePath = join(installPath, file);
       try {
@@ -125,11 +132,16 @@ async function validateExistingInstallation(
       nextSteps: ['PVSnesLib is already installed and validated'],
     };
   } catch (error) {
-    throw new Error(`Existing installation is invalid: ${error instanceof Error ? error.message : String(error)}`);
+    throw new Error(
+      `Existing installation is invalid: ${error instanceof Error ? error.message : String(error)}`
+    );
   }
 }
 
-async function downloadPVSnesLib(version: string, downloadDir: string): Promise<string> {
+async function downloadPVSnesLib(
+  version: string,
+  downloadDir: string
+): Promise<string> {
   const downloadUrl = `https://github.com/alekmaul/pvsneslib/archive/refs/tags/${version}.tar.gz`;
   const downloadPath = join(downloadDir, `pvsneslib-${version}.tar.gz`);
 
@@ -156,18 +168,23 @@ async function downloadPVSnesLib(version: string, downloadDir: string): Promise<
 
     return downloadPath;
   } catch (error) {
-    throw new Error(`Failed to download PVSnesLib: ${error instanceof Error ? error.message : String(error)}`);
+    throw new Error(
+      `Failed to download PVSnesLib: ${error instanceof Error ? error.message : String(error)}`
+    );
   }
 }
 
-async function extractPVSnesLib(archivePath: string, extractPath: string): Promise<void> {
+async function extractPVSnesLib(
+  archivePath: string,
+  extractPath: string
+): Promise<void> {
   try {
     // Create extraction directory
     await fs.mkdir(extractPath, { recursive: true });
 
     // Check if tar is available
     const hasTar = await checkCommandExists('tar');
-    
+
     if (!hasTar) {
       throw new Error('tar command not found - required for extraction');
     }
@@ -178,23 +195,26 @@ async function extractPVSnesLib(archivePath: string, extractPath: string): Promi
     const tempDir = join(extractPath, '..', 'temp_extract');
     await fs.mkdir(tempDir, { recursive: true });
 
-    await execAsync(`tar -xzf "${archivePath}" -C "${tempDir}" --strip-components=1`);
+    await execAsync(
+      `tar -xzf "${archivePath}" -C "${tempDir}" --strip-components=1`
+    );
 
     // Move contents from temp directory to final location
     await execAsync(`cp -r "${tempDir}/"* "${extractPath}/"`);
-    
+
     // Clean up
     await fs.rm(tempDir, { recursive: true, force: true });
     await fs.rm(archivePath, { force: true }); // Remove downloaded archive
-
   } catch (error) {
-    throw new Error(`Failed to extract PVSnesLib: ${error instanceof Error ? error.message : String(error)}`);
+    throw new Error(
+      `Failed to extract PVSnesLib: ${error instanceof Error ? error.message : String(error)}`
+    );
   }
 }
 
 async function validateInstallation(installPath: string): Promise<string[]> {
   const components: string[] = [];
-  
+
   // Check for essential PVSnesLib components
   const requiredComponents = [
     { path: 'include/snes/snes.h', name: 'SNES Headers' },
@@ -223,9 +243,12 @@ async function validateInstallation(installPath: string): Promise<string[]> {
   return components;
 }
 
-async function updateProjectConfig(installPath: string, version: string): Promise<string> {
+async function updateProjectConfig(
+  installPath: string,
+  version: string
+): Promise<string> {
   const configPath = join(process.cwd(), 'project.env');
-  
+
   try {
     // Read existing config if it exists
     let config = '';
@@ -238,7 +261,7 @@ async function updateProjectConfig(installPath: string, version: string): Promis
     // Update or add PVSnesLib configuration lines
     const configLines = config.split('\n');
     const newLines: string[] = [];
-    
+
     let pvsnesLibPathSet = false;
     let pvsnesLibVersionSet = false;
 
@@ -268,7 +291,9 @@ async function updateProjectConfig(installPath: string, version: string): Promis
     await fs.writeFile(configPath, newLines.join('\n'));
     return configPath;
   } catch (error) {
-    throw new Error(`Failed to update project configuration: ${error instanceof Error ? error.message : String(error)}`);
+    throw new Error(
+      `Failed to update project configuration: ${error instanceof Error ? error.message : String(error)}`
+    );
   }
 }
 
@@ -280,7 +305,9 @@ async function calculateInstallationSize(installPath: string): Promise<number> {
   } catch {
     // Fallback: try to estimate size by counting files
     try {
-      const { stdout } = await execAsync(`find "${installPath}" -type f | wc -l`);
+      const { stdout } = await execAsync(
+        `find "${installPath}" -type f | wc -l`
+      );
       const fileCount = parseInt(stdout.trim(), 10);
       return fileCount * 10000; // Rough estimate: 10KB per file
     } catch {
@@ -300,31 +327,31 @@ async function checkCommandExists(command: string): Promise<boolean> {
 
 function formatInstallationResult(result: InstallationResult): string {
   const lines: string[] = [];
-  
+
   lines.push('🎮 PVSnesLib SDK Installation Complete!');
-  lines.push('=' .repeat(50));
+  lines.push('='.repeat(50));
   lines.push('');
-  
+
   lines.push(`✅ Version: ${result.version}`);
   lines.push(`📁 Install Path: ${result.installPath}`);
   lines.push(`💾 Size: ${(result.size / (1024 * 1024)).toFixed(1)} MB`);
   lines.push(`⚙️  Config Updated: ${result.configPath}`);
   lines.push('');
-  
+
   lines.push('📦 Installed Components:');
   for (const component of result.components) {
     lines.push(`   • ${component}`);
   }
   lines.push('');
-  
+
   lines.push('🚀 Next Steps:');
   for (let i = 0; i < result.nextSteps.length; i++) {
     lines.push(`   ${i + 1}. ${result.nextSteps[i]}`);
   }
   lines.push('');
-  
+
   lines.push('Ready to develop SNES games with PVSnesLib! 🎮✨');
-  
+
   return lines.join('\n');
 }
 

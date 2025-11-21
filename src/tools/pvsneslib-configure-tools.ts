@@ -45,38 +45,44 @@ interface ConfigurationResult {
   troubleshooting: string[];
 }
 
-async function configurePVSnesLibTools(request: ConfigurationRequest): Promise<ConfigurationResult> {
+async function configurePVSnesLibTools(
+  request: ConfigurationRequest
+): Promise<ConfigurationResult> {
   // Resolve paths
-  const installPath = request.installPath 
-    ? resolve(request.installPath) 
+  const installPath = request.installPath
+    ? resolve(request.installPath)
     : await findPVSnesLibInstallation();
-  const projectPath = request.projectPath 
-    ? resolve(request.projectPath) 
+  const projectPath = request.projectPath
+    ? resolve(request.projectPath)
     : process.cwd();
 
   // Configure each tool
   const tools = await configureAllTools(installPath, request);
-  
+
   // Update environment configuration
   const environmentFile = await updateEnvironmentConfig(
-    installPath, 
-    projectPath, 
-    tools, 
+    installPath,
+    projectPath,
+    tools,
     request.customConfig
   );
 
   // Update project Makefile
-  const makefileUpdated = await updateProjectMakefile(projectPath, installPath, request);
-  
+  const makefileUpdated = await updateProjectMakefile(
+    projectPath,
+    installPath,
+    request
+  );
+
   // Update system PATH
   const { pathUpdated, shellProfile } = await updateSystemPath(installPath);
 
   // Generate setup instructions
   const instructions = generateSetupInstructions(
-    installPath, 
-    environmentFile, 
-    makefileUpdated, 
-    pathUpdated, 
+    installPath,
+    environmentFile,
+    makefileUpdated,
+    pathUpdated,
     shellProfile
   );
 
@@ -115,9 +121,17 @@ async function findPVSnesLibInstallation(): Promise<string> {
 
   for (const searchPattern of searchPaths) {
     try {
-      const { stdout } = await execAsync(`ls -d ${searchPattern} 2>/dev/null | head -1 || true`);
+      const { stdout } = await execAsync(
+        `ls -d ${searchPattern} 2>/dev/null | head -1 || true`
+      );
       const match = stdout.trim();
-      if (match && await fs.access(match).then(() => true).catch(() => false)) {
+      if (
+        match &&
+        (await fs
+          .access(match)
+          .then(() => true)
+          .catch(() => false))
+      ) {
         return resolve(match);
       }
     } catch {
@@ -126,8 +140,12 @@ async function findPVSnesLibInstallation(): Promise<string> {
   }
 
   // If not found, throw an error with helpful installation suggestion
-  const suggestedPath = join(process.env.HOME || '~', '.pvsneslib', 'pvsneslib-4.3.0');
-  
+  const suggestedPath = join(
+    process.env.HOME || '~',
+    '.pvsneslib',
+    'pvsneslib-4.3.0'
+  );
+
   throw new Error(`PVSnesLib installation not found. Please either:
 1. Install PVSnesLib using: mcp run pvsneslib_install_sdk --action install_sdk --version 4.3.0
 2. Download manually from GitHub releases and extract to: ${suggestedPath}
@@ -139,7 +157,7 @@ For automatic installation, you can run:
 }
 
 async function configureAllTools(
-  installPath: string, 
+  installPath: string,
   request: ConfigurationRequest
 ): Promise<ToolConfiguration[]> {
   const toolDefinitions: ToolDefinition[] = [
@@ -151,7 +169,7 @@ async function configureAllTools(
     },
     {
       name: 'WLA-65816 Assembler',
-      binary: 'wla-65816', 
+      binary: 'wla-65816',
       baseFlags: ['-s', '-x'],
       location: 'bin',
     },
@@ -194,9 +212,14 @@ async function configureAllTools(
   ];
 
   const tools: ToolConfiguration[] = [];
-  
+
   for (const toolDef of toolDefinitions) {
-    const toolPath = join(installPath, 'devkitsnes', toolDef.location, toolDef.binary);
+    const toolPath = join(
+      installPath,
+      'devkitsnes',
+      toolDef.location,
+      toolDef.binary
+    );
     const tool: ToolConfiguration = {
       name: toolDef.name,
       path: toolPath,
@@ -208,11 +231,11 @@ async function configureAllTools(
     try {
       // Check if tool exists
       await fs.access(toolPath, fs.constants.F_OK);
-      
+
       // Try to get version (many tools don't support --version, so we'll be flexible)
       try {
         let versionOutput = '';
-        
+
         // Try different version commands
         const versionCommands = [
           `"${toolPath}" --version`,
@@ -220,19 +243,25 @@ async function configureAllTools(
           `"${toolPath}" -h | head -1`,
           `"${toolPath}" 2>&1 | head -1`,
         ];
-        
+
         for (const cmd of versionCommands) {
           try {
-            const { stdout, stderr } = await execAsync(`${cmd} 2>/dev/null || true`);
+            const { stdout, stderr } = await execAsync(
+              `${cmd} 2>/dev/null || true`
+            );
             versionOutput = (stdout || stderr).trim();
-            if (versionOutput && !versionOutput.includes('error') && !versionOutput.includes('not found')) {
+            if (
+              versionOutput &&
+              !versionOutput.includes('error') &&
+              !versionOutput.includes('not found')
+            ) {
               break;
             }
           } catch {
             // Try next command
           }
         }
-        
+
         // Extract version number if found
         const versionMatch = versionOutput.match(/\b\d+\.\d+(\.\d+)?/);
         tool.version = versionMatch ? versionMatch[0] : 'detected';
@@ -252,7 +281,8 @@ async function configureAllTools(
 
       // Set environment variables
       tool.environment = {
-        [`PVSNESLIB_${toolDef.binary.toUpperCase().replace('-', '_')}`]: toolPath,
+        [`PVSNESLIB_${toolDef.binary.toUpperCase().replace('-', '_')}`]:
+          toolPath,
       };
 
       tool.status = 'configured';
@@ -268,7 +298,7 @@ async function configureAllTools(
 
 function getCompilerFlags(request: ConfigurationRequest): string[] {
   const flags: string[] = [];
-  
+
   // Add custom compiler flags
   if (request.compilerFlags) {
     flags.push(...request.compilerFlags);
@@ -313,7 +343,7 @@ async function updateEnvironmentConfig(
     `PVSNESLIB="${installPath}"`,
     `PVSNESLIB_BIN="${binPath}"`,
     `PVSNESLIB_TOOLS="${toolsPath}"`,
-    `PVSNESLIB_LIB="${libPath}"`, 
+    `PVSNESLIB_LIB="${libPath}"`,
     `PVSNESLIB_INCLUDE="${includePath}"`,
     '',
     '# Compiler and tool paths',
@@ -353,11 +383,13 @@ async function updateProjectMakefile(
   request: ConfigurationRequest
 ): Promise<boolean> {
   const makefilePath = join(projectPath, 'Makefile');
-  
+
   try {
     // Create a proper PVSnesLib Makefile based on working examples
-    const projectName = basename(projectPath).toLowerCase().replace(/[^a-z0-9]/g, '');
-    
+    const projectName = basename(projectPath)
+      .toLowerCase()
+      .replace(/[^a-z0-9]/g, '');
+
     const makefileContent = [
       `# ${basename(projectPath)} SNES Project`,
       '# Generated by MCP-PVSnesLib configure_tools',
@@ -377,8 +409,9 @@ async function updateProjectMakefile(
       '',
       '# Additional compiler flags',
       ...(request.debugMode ? ['export PVSNESLIB_DEBUG := 1'] : []),
-      ...(request.compilerFlags && request.compilerFlags.length > 0 ? 
-          [`# Custom flags: ${request.compilerFlags.join(' ')}`] : []),
+      ...(request.compilerFlags && request.compilerFlags.length > 0
+        ? [`# Custom flags: ${request.compilerFlags.join(' ')}`]
+        : []),
       '',
       'all: $(ROMNAME).sfc',
       '',
@@ -402,10 +435,12 @@ async function updateProjectMakefile(
   }
 }
 
-async function updateSystemPath(installPath: string): Promise<{ pathUpdated: boolean; shellProfile: string }> {
+async function updateSystemPath(
+  installPath: string
+): Promise<{ pathUpdated: boolean; shellProfile: string }> {
   const binPath = join(installPath, 'devkitsnes', 'bin');
   const homeDir = process.env.HOME || '';
-  
+
   // Determine shell profile file
   const shellProfiles = [
     join(homeDir, '.zshrc'),
@@ -431,7 +466,7 @@ async function updateSystemPath(installPath: string): Promise<{ pathUpdated: boo
 
   try {
     const content = await fs.readFile(shellProfile, 'utf-8');
-    
+
     // Check if PVSnesLib PATH is already added
     if (content.includes('devkitsnes/bin') || content.includes('PVSNESLIB')) {
       return { pathUpdated: false, shellProfile: basename(shellProfile) };
@@ -477,32 +512,29 @@ function generateSetupInstructions(
   if (makefileUpdated) {
     instructions.push(
       '3. Your Makefile has been updated with PVSnesLib settings.',
-      '',
+      ''
     );
   } else {
     instructions.push(
       '3. Add PVSnesLib settings to your Makefile (see generated example).',
-      '',
+      ''
     );
   }
 
   if (pathUpdated) {
     instructions.push(
       `4. Restart your shell or run: source ~/${shellProfile}`,
-      '',
+      ''
     );
   } else {
-    instructions.push(
-      '4. Add PVSnesLib to your PATH manually if needed.',
-      '',
-    );
+    instructions.push('4. Add PVSnesLib to your PATH manually if needed.', '');
   }
 
   instructions.push(
     '5. Start building your SNES game:',
     '   make',
     '',
-    'Happy SNES development! 🚀',
+    'Happy SNES development! 🚀'
   );
 
   return instructions;
@@ -511,7 +543,7 @@ function generateSetupInstructions(
 function generateTroubleshootingSteps(tools: ToolConfiguration[]): string[] {
   const troubleshooting: string[] = [];
   const missingTools = tools.filter(t => t.status === 'missing');
-  
+
   if (missingTools.length > 0) {
     troubleshooting.push(
       '⚠️ Some tools are missing or misconfigured:',
@@ -523,7 +555,7 @@ function generateTroubleshootingSteps(tools: ToolConfiguration[]): string[] {
       '1. Reinstall PVSnesLib: pvsneslib_install_sdk --force-reinstall',
       '2. Make tools executable: chmod +x $PVSNESLIB/devkitsnes/bin/*',
       '3. Verify installation: pvsneslib_validate_install',
-      '',
+      ''
     );
   }
 
@@ -536,11 +568,11 @@ function generateTroubleshootingSteps(tools: ToolConfiguration[]): string[] {
 
 function formatConfigurationResult(result: ConfigurationResult): string {
   const lines: string[] = [];
-  
+
   lines.push('🔧 PVSnesLib Toolchain Configuration Report');
-  lines.push('=' .repeat(55));
+  lines.push('='.repeat(55));
   lines.push('');
-  
+
   const status = result.success ? '✅ SUCCESS' : '❌ FAILED';
   lines.push(`Status: ${status}`);
   lines.push(`Installation: ${result.installPath}`);
@@ -550,7 +582,12 @@ function formatConfigurationResult(result: ConfigurationResult): string {
   // Tools configuration status
   lines.push('🛠️ Tool Configuration:');
   for (const tool of result.tools) {
-    const statusIcon = tool.status === 'configured' ? '✅' : tool.status === 'missing' ? '❌' : '⚠️';
+    const statusIcon =
+      tool.status === 'configured'
+        ? '✅'
+        : tool.status === 'missing'
+          ? '❌'
+          : '⚠️';
     const version = tool.version ? ` (v${tool.version})` : '';
     lines.push(`   ${statusIcon} ${tool.name}${version}`);
   }
@@ -559,8 +596,12 @@ function formatConfigurationResult(result: ConfigurationResult): string {
   // Configuration files
   lines.push('📁 Configuration Files:');
   lines.push(`   📄 Environment: ${result.environmentFile}`);
-  lines.push(`   📄 Makefile: ${result.makefileUpdated ? '✅ Updated' : '⚠️ Manual update needed'}`);
-  lines.push(`   📄 Shell Profile: ${result.pathUpdated ? `✅ Updated (${result.shellProfile})` : '⚠️ Manual update needed'}`);
+  lines.push(
+    `   📄 Makefile: ${result.makefileUpdated ? '✅ Updated' : '⚠️ Manual update needed'}`
+  );
+  lines.push(
+    `   📄 Shell Profile: ${result.pathUpdated ? `✅ Updated (${result.shellProfile})` : '⚠️ Manual update needed'}`
+  );
   lines.push('');
 
   // Instructions
@@ -588,45 +629,64 @@ export const pvsnesLibConfigureToolsTool = createTypedTool({
     action: Type.Literal('configure_tools', {
       description: 'The action to perform (must be "configure_tools")',
     }),
-    installPath: Type.Optional(Type.String({
-      description: 'Path to PVSnesLib installation (auto-detected if not provided)',
-    })),
-    projectPath: Type.Optional(Type.String({
-      description: 'Project directory path (default: current directory)',
-    })),
-    compilerFlags: Type.Optional(Type.Array(Type.String(), {
-      description: 'Additional compiler flags',
-    })),
-    optimizationLevel: Type.Optional(Type.Union([
-      Type.Literal('none'),
-      Type.Literal('basic'),
-      Type.Literal('aggressive')
-    ], {
-      description: 'Optimization level: none, basic, or aggressive (default: basic)',
-    })),
-    debugMode: Type.Optional(Type.Boolean({
-      description: 'Enable debug mode with debug symbols and flags',
-    })),
-    customConfig: Type.Optional(Type.Record(Type.String(), Type.String(), {
-      description: 'Custom environment variables to add',
-    })),
+    installPath: Type.Optional(
+      Type.String({
+        description:
+          'Path to PVSnesLib installation (auto-detected if not provided)',
+      })
+    ),
+    projectPath: Type.Optional(
+      Type.String({
+        description: 'Project directory path (default: current directory)',
+      })
+    ),
+    compilerFlags: Type.Optional(
+      Type.Array(Type.String(), {
+        description: 'Additional compiler flags',
+      })
+    ),
+    optimizationLevel: Type.Optional(
+      Type.Union(
+        [
+          Type.Literal('none'),
+          Type.Literal('basic'),
+          Type.Literal('aggressive'),
+        ],
+        {
+          description:
+            'Optimization level: none, basic, or aggressive (default: basic)',
+        }
+      )
+    ),
+    debugMode: Type.Optional(
+      Type.Boolean({
+        description: 'Enable debug mode with debug symbols and flags',
+      })
+    ),
+    customConfig: Type.Optional(
+      Type.Record(Type.String(), Type.String(), {
+        description: 'Custom environment variables to add',
+      })
+    ),
   }),
   outputSchema: Type.Object({
     success: Type.Boolean(),
     content: Type.Optional(Type.String()),
     error: Type.Optional(Type.String()),
-    metadata: Type.Optional(Type.Object({
-      installPath: Type.String(),
-      projectPath: Type.String(),
-      toolsConfigured: Type.Number(),
-      toolsTotal: Type.Number(),
-      environmentFile: Type.String(),
-      makefileUpdated: Type.Boolean(),
-      pathUpdated: Type.Boolean(),
-      timestamp: Type.String(),
-    })),
+    metadata: Type.Optional(
+      Type.Object({
+        installPath: Type.String(),
+        projectPath: Type.String(),
+        toolsConfigured: Type.Number(),
+        toolsTotal: Type.Number(),
+        environmentFile: Type.String(),
+        makefileUpdated: Type.Boolean(),
+        pathUpdated: Type.Boolean(),
+        timestamp: Type.String(),
+      })
+    ),
   }),
-  handler: async (params) => {
+  handler: async params => {
     try {
       if (params.action !== 'configure_tools') {
         throw new Error('Invalid action. Must be "configure_tools"');
@@ -650,7 +710,8 @@ export const pvsnesLibConfigureToolsTool = createTypedTool({
         metadata: {
           installPath: result.installPath,
           projectPath: result.projectPath,
-          toolsConfigured: result.tools.filter(t => t.status === 'configured').length,
+          toolsConfigured: result.tools.filter(t => t.status === 'configured')
+            .length,
           toolsTotal: result.tools.length,
           environmentFile: result.environmentFile,
           makefileUpdated: result.makefileUpdated,

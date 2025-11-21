@@ -5,11 +5,18 @@ import type { ToolHandler } from '../types/index.js';
 
 const PVSnesLibInitSchema = Type.Object({
   action: Type.Literal('init_project'),
-  projectName: Type.String({ minLength: 1, description: 'Project name is required' }),
+  projectName: Type.String({
+    minLength: 1,
+    description: 'Project name is required',
+  }),
   projectPath: Type.Optional(Type.String({ default: '.' })),
   pvsnesLibVersion: Type.Optional(Type.String({ default: '4.3.0' })),
   includeExamples: Type.Optional(Type.Boolean({ default: true })),
-  toolchain: Type.Optional(Type.Union([Type.Literal('wla-dx'), Type.Literal('ca65')], { default: 'wla-dx' })),
+  toolchain: Type.Optional(
+    Type.Union([Type.Literal('wla-dx'), Type.Literal('ca65')], {
+      default: 'wla-dx',
+    })
+  ),
 });
 
 type PVSnesLibInitParams = Static<typeof PVSnesLibInitSchema>;
@@ -29,7 +36,7 @@ async function initProject(params: PVSnesLibInitParams): Promise<string> {
   const dirs = [
     'src',
     'assets/graphics',
-    'assets/sound', 
+    'assets/sound',
     'assets/maps',
     'assets/palettes',
     'include',
@@ -44,7 +51,11 @@ async function initProject(params: PVSnesLibInitParams): Promise<string> {
   }
 
   // Generate project.env configuration file
-  const projectEnv = generateProjectEnv(projectName, pvsnesLibVersion, toolchain);
+  const projectEnv = generateProjectEnv(
+    projectName,
+    pvsnesLibVersion,
+    toolchain
+  );
   await fs.writeFile(join(fullPath, 'project.env'), projectEnv);
 
   // Generate main Makefile
@@ -64,7 +75,10 @@ async function initProject(params: PVSnesLibInitParams): Promise<string> {
 
   // Generate initial assets Makefile
   const assetsMakefile = generateAssetsMakefile();
-  await fs.writeFile(join(fullPath, 'assets', 'Makefile.assets'), assetsMakefile);
+  await fs.writeFile(
+    join(fullPath, 'assets', 'Makefile.assets'),
+    assetsMakefile
+  );
 
   // Generate README
   const readme = generateReadme(projectName, toolchain);
@@ -77,7 +91,7 @@ async function initProject(params: PVSnesLibInitParams): Promise<string> {
   // Generate build scripts
   const buildScript = generateBuildScript(toolchain);
   await fs.writeFile(join(fullPath, 'tools', 'build.sh'), buildScript);
-  
+
   // Make build script executable
   await fs.chmod(join(fullPath, 'tools', 'build.sh'), 0o755);
 
@@ -642,12 +656,12 @@ esac
 async function generateExampleAssets(projectPath: string): Promise<void> {
   // Generate a simple example sprite config
   const exampleSprite = {
-    name: "player_example",
-    size: "16x16",
-    colorDepth: "4bpp",
+    name: 'player_example',
+    size: '16x16',
+    colorDepth: '4bpp',
     animationFrames: 4,
   };
-  
+
   await fs.writeFile(
     join(projectPath, 'assets', 'graphics', 'player_example.json'),
     JSON.stringify(exampleSprite, null, 2)
@@ -655,13 +669,13 @@ async function generateExampleAssets(projectPath: string): Promise<void> {
 
   // Generate example tilemap config
   const exampleTilemap = {
-    name: "level1_example",
+    name: 'level1_example',
     width: 32,
     height: 28,
-    tileSize: "8x8",
+    tileSize: '8x8',
     includeCollision: true,
   };
-  
+
   await fs.writeFile(
     join(projectPath, 'assets', 'maps', 'level1_example.json'),
     JSON.stringify(exampleTilemap, null, 2)
@@ -669,11 +683,11 @@ async function generateExampleAssets(projectPath: string): Promise<void> {
 
   // Generate example palette config
   const examplePalette = {
-    name: "main_palette",
-    colors: ["#000000", "#FFFFFF", "#FF0000", "#00FF00", "#0000FF"],
-    colorMode: "4bpp",
+    name: 'main_palette',
+    colors: ['#000000', '#FFFFFF', '#FF0000', '#00FF00', '#0000FF'],
+    colorMode: '4bpp',
   };
-  
+
   await fs.writeFile(
     join(projectPath, 'assets', 'palettes', 'main_palette.json'),
     JSON.stringify(examplePalette, null, 2)
@@ -682,7 +696,8 @@ async function generateExampleAssets(projectPath: string): Promise<void> {
 
 export const pvsnesLibInitTool: ToolHandler = {
   name: 'pvsneslib_init',
-  description: 'Initialize a new PVSnesLib SNES development project with proper structure, Makefile, and skeleton code',
+  description:
+    'Initialize a new PVSnesLib SNES development project with proper structure, Makefile, and skeleton code',
   parameters: [
     {
       name: 'action',

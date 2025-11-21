@@ -66,10 +66,12 @@ export class MCPServer {
             name: tool.name,
             parametersCount: tool.parameters.length,
             parametersTypes: tool.parameters.map(p => `${p.name}:${p.type}`),
-            hasCompilerFlags: tool.parameters.some(p => p.name === 'compilerFlags'),
+            hasCompilerFlags: tool.parameters.some(
+              p => p.name === 'compilerFlags'
+            ),
           });
         }
-        
+
         return {
           name: tool.name,
           description: tool.description,

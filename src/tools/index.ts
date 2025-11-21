@@ -19,14 +19,18 @@ import { pvsnesLibBootstrapTool } from './pvsneslib-bootstrap.js';
 function typedToolToHandler(typedTool: TypedTool): ToolHandler {
   // Extract parameters from TypeBox schema
   const parameters: any[] = [];
-  
-  if (typedTool.inputSchema && typedTool.inputSchema.type === 'object' && typedTool.inputSchema.properties) {
+
+  if (
+    typedTool.inputSchema &&
+    typedTool.inputSchema.type === 'object' &&
+    typedTool.inputSchema.properties
+  ) {
     const properties = typedTool.inputSchema.properties;
     const required = typedTool.inputSchema.required || [];
-    
+
     for (const [name, propSchema] of Object.entries(properties)) {
       let prop = propSchema as any;
-      
+
       // Handle Type.Optional wrapper - extract the inner type
       let isRequired = required.includes(name);
       if (prop.anyOf) {
@@ -34,28 +38,28 @@ function typedToolToHandler(typedTool: TypedTool): ToolHandler {
         prop = prop.anyOf[0];
         isRequired = false;
       }
-      
+
       const param: any = {
         name,
         description: prop.description || '',
         required: isRequired,
         type: prop.type,
       };
-      
+
       // Handle array types specifically
       if (prop.type === 'array' && prop.items) {
         param.items = { type: prop.items.type };
       }
-      
+
       // Handle union types (for optimizationLevel)
       if (prop.anyOf && !prop.type) {
         param.type = 'string'; // Union of literals is treated as string
       }
-      
+
       parameters.push(param);
     }
   }
-  
+
   return {
     name: typedTool.name,
     description: typedTool.description,

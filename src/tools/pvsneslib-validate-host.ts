@@ -73,9 +73,9 @@ async function validateHost(): Promise<HostValidationReport> {
     report.storage,
   ];
 
-  if (allResults.some((r) => r.status === 'FAIL')) {
+  if (allResults.some(r => r.status === 'FAIL')) {
     report.overall = 'FAIL';
-  } else if (allResults.some((r) => r.status === 'WARN')) {
+  } else if (allResults.some(r => r.status === 'WARN')) {
     report.overall = 'WARN';
   }
 
@@ -108,7 +108,9 @@ async function getSystemInfo(): Promise<SystemInfo> {
   return info;
 }
 
-async function validateSystem(systemInfo: SystemInfo): Promise<ValidationResult> {
+async function validateSystem(
+  systemInfo: SystemInfo
+): Promise<ValidationResult> {
   const { platform, arch, nodeVersion } = systemInfo;
 
   // Check supported platforms
@@ -166,7 +168,9 @@ async function validatePrerequisites(): Promise<ValidationResult[]> {
     status: gitResult.found ? 'PASS' : 'WARN',
     message: gitResult.found ? 'Git is available' : 'Git not found',
     details: gitResult.version,
-    suggestion: gitResult.found ? undefined : 'Install Git for version control and SDK downloads',
+    suggestion: gitResult.found
+      ? undefined
+      : 'Install Git for version control and SDK downloads',
   });
 
   // Check for make
@@ -175,13 +179,15 @@ async function validatePrerequisites(): Promise<ValidationResult[]> {
     status: makeResult.found ? 'PASS' : 'FAIL',
     message: makeResult.found ? 'Make is available' : 'Make not found',
     details: makeResult.version,
-    suggestion: makeResult.found ? undefined : 'Install make (build-essential on Ubuntu, Xcode tools on macOS)',
+    suggestion: makeResult.found
+      ? undefined
+      : 'Install make (build-essential on Ubuntu, Xcode tools on macOS)',
   });
 
   // Check for curl or wget (for downloads)
   const curlResult = await checkCommand('curl', 'curl --version');
   const wgetResult = await checkCommand('wget', 'wget --version');
-  
+
   if (curlResult.found || wgetResult.found) {
     results.push({
       status: 'PASS',
@@ -199,7 +205,7 @@ async function validatePrerequisites(): Promise<ValidationResult[]> {
   // Check for unzip/tar (for extraction)
   const unzipResult = await checkCommand('unzip', 'unzip -h');
   const tarResult = await checkCommand('tar', 'tar --version');
-  
+
   if (unzipResult.found || tarResult.found) {
     results.push({
       status: 'PASS',
@@ -217,7 +223,10 @@ async function validatePrerequisites(): Promise<ValidationResult[]> {
   return results;
 }
 
-async function checkCommand(command: string, testCommand: string): Promise<{ found: boolean; version?: string }> {
+async function checkCommand(
+  command: string,
+  testCommand: string
+): Promise<{ found: boolean; version?: string }> {
   try {
     const { stdout } = await execAsync(testCommand);
     return {
@@ -261,11 +270,14 @@ async function validateNetwork(): Promise<ValidationResult> {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 5000);
 
-    const response = await fetch('https://api.github.com/repos/alekmaul/pvsneslib', {
-      signal: controller.signal,
-      method: 'HEAD',
-    });
-    
+    const response = await fetch(
+      'https://api.github.com/repos/alekmaul/pvsneslib',
+      {
+        signal: controller.signal,
+        method: 'HEAD',
+      }
+    );
+
     clearTimeout(timeout);
 
     if (response.ok) {
@@ -287,7 +299,8 @@ async function validateNetwork(): Promise<ValidationResult> {
       status: 'WARN',
       message: 'Cannot verify internet connectivity',
       details: error instanceof Error ? error.message : String(error),
-      suggestion: 'Check internet connection or use offline installation methods',
+      suggestion:
+        'Check internet connection or use offline installation methods',
     };
   }
 }
@@ -326,7 +339,7 @@ async function validateStorage(): Promise<ValidationResult> {
 
 function generateSummary(report: HostValidationReport): string {
   const { overall } = report;
-  
+
   if (overall === 'PASS') {
     return '✅ Host validation PASSED - System is ready for PVSnesLib development';
   } else if (overall === 'WARN') {
@@ -361,7 +374,9 @@ function generateNextSteps(report: HostValidationReport): string[] {
     if (report.overall === 'WARN') {
       steps.push('After addressing warnings, run: pvsneslib_install_sdk');
     } else {
-      steps.push('Resolve critical issues before proceeding with PVSnesLib installation');
+      steps.push(
+        'Resolve critical issues before proceeding with PVSnesLib installation'
+      );
     }
   }
 
@@ -370,17 +385,21 @@ function generateNextSteps(report: HostValidationReport): string[] {
 
 function formatValidationReport(report: HostValidationReport): string {
   const lines: string[] = [];
-  
+
   lines.push('🔍 PVSnesLib Host Validation Report');
-  lines.push('=' .repeat(50));
+  lines.push('='.repeat(50));
   lines.push('');
 
   // Overall status
-  lines.push(`📋 Overall Status: ${getStatusEmoji(report.overall)} ${report.overall}`);
+  lines.push(
+    `📋 Overall Status: ${getStatusEmoji(report.overall)} ${report.overall}`
+  );
   lines.push('');
 
   // System info
-  lines.push(`🖥️  System: ${getStatusEmoji(report.system.status)} ${report.system.message}`);
+  lines.push(
+    `🖥️  System: ${getStatusEmoji(report.system.status)} ${report.system.message}`
+  );
   if (report.system.details) {
     lines.push(`   ${report.system.details}`);
   }
@@ -397,18 +416,24 @@ function formatValidationReport(report: HostValidationReport): string {
   lines.push('');
 
   // Permissions
-  lines.push(`📁 Permissions: ${getStatusEmoji(report.permissions.status)} ${report.permissions.message}`);
+  lines.push(
+    `📁 Permissions: ${getStatusEmoji(report.permissions.status)} ${report.permissions.message}`
+  );
   lines.push('');
 
   // Network
-  lines.push(`🌐 Network: ${getStatusEmoji(report.network.status)} ${report.network.message}`);
+  lines.push(
+    `🌐 Network: ${getStatusEmoji(report.network.status)} ${report.network.message}`
+  );
   if (report.network.details) {
     lines.push(`   ${report.network.details}`);
   }
   lines.push('');
 
   // Storage
-  lines.push(`💾 Storage: ${getStatusEmoji(report.storage.status)} ${report.storage.message}`);
+  lines.push(
+    `💾 Storage: ${getStatusEmoji(report.storage.status)} ${report.storage.message}`
+  );
   if (report.storage.details) {
     lines.push(`   ${report.storage.details}`);
   }
@@ -432,20 +457,25 @@ function formatValidationReport(report: HostValidationReport): string {
 
 function getStatusEmoji(status: string): string {
   switch (status) {
-    case 'PASS': return '✅';
-    case 'WARN': return '⚠️ ';
-    case 'FAIL': return '❌';
-    default: return '❓';
+    case 'PASS':
+      return '✅';
+    case 'WARN':
+      return '⚠️ ';
+    case 'FAIL':
+      return '❌';
+    default:
+      return '❓';
   }
 }
 
 export const pvsnesLibValidateHostTool: ToolHandler = {
   name: 'pvsneslib_validate_host',
-  description: 'Validate host system requirements for PVSnesLib development before installation',
+  description:
+    'Validate host system requirements for PVSnesLib development before installation',
   parameters: [
     {
       name: 'action',
-      type: 'string', 
+      type: 'string',
       description: 'The action to perform (must be "validate_host")',
       required: true,
     },
@@ -471,7 +501,9 @@ export const pvsnesLibValidateHostTool: ToolHandler = {
         metadata: {
           overall: report.overall,
           systemCompatible: report.system.status,
-          prerequisitesSatisfied: report.prerequisites.every(p => p.status === 'PASS'),
+          prerequisitesSatisfied: report.prerequisites.every(
+            p => p.status === 'PASS'
+          ),
           canProceed: report.overall !== 'FAIL',
           timestamp: new Date().toISOString(),
         },
